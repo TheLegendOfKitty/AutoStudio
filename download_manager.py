@@ -62,14 +62,14 @@ class AutoStudioDownloadManager:
         models = [
             {
                 "id": "flux-single",
-                "name": "Flux.1-schnell (Single File)",
+                "name": "Flux.1-dev (Single File)",
                 "size": "~24 GB",
                 "description": "Complete model in one file - faster, cleaner",
                 "auth_required": True
             },
             {
                 "id": "flux-minimal",
-                "name": "Flux.1-schnell (Minimal Components)",
+                "name": "Flux.1-dev (Minimal Components)",
                 "size": "~3-4 GB",
                 "description": "Essential components only - reduced functionality",
                 "auth_required": True
@@ -123,7 +123,7 @@ class AutoStudioDownloadManager:
             if model_id == "flux-single":
                 if not self.authenticated:
                     self.authenticate_if_needed()
-                return single_downloader.download_flux_single_file("schnell")
+                return single_downloader.download_flux_single_file("dev")
                 
             elif model_id == "flux-minimal":
                 if not self.authenticated:
@@ -277,7 +277,7 @@ class AutoStudioDownloadManager:
             print(f"   python run.py --sd_version xl --device auto")
         
         # Check if existing single file is already present
-        existing_single_file = Path("./flux1-schnell.safetensors")
+        existing_single_file = Path("./flux1-dev.safetensors")
         if existing_single_file.exists() and "flux" in model_id:
             print(f"\n💡 Found existing single file: {existing_single_file}")
             print(f"   Size: {existing_single_file.stat().st_size / (1024**3):.1f} GB")

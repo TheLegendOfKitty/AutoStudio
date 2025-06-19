@@ -51,13 +51,13 @@ print_status "Creating required directories..."
 mkdir -p DETECT_SAM/pretrain/
 mkdir -p DETECT_SAM/Grounding-DINO/
 
-# 1. Download Flux.1-schnell model
-print_status "Downloading Flux.1-schnell model (this may take a while, ~24GB)..."
+# 1. Download Flux.1-dev model
+print_status "Downloading Flux.1-dev model (this may take a while, ~24GB)..."
 echo "This will download the main Flux model for text-to-image generation"
-huggingface-cli download black-forest-labs/FLUX.1-schnell --max-workers 1
+huggingface-cli download black-forest-labs/FLUX.1-dev --max-workers 1
 
 if [ $? -eq 0 ]; then
-    print_success "Flux.1-schnell model downloaded successfully"
+    print_success "Flux.1-dev model downloaded successfully"
 else
     print_error "Failed to download Flux model"
     exit 1
@@ -105,10 +105,10 @@ print_status "Verifying model files..."
 models_ok=true
 
 # Check Flux model (it's in HuggingFace cache, so we check if the download succeeded)
-if huggingface-cli list black-forest-labs/FLUX.1-schnell --cache-dir ~/.cache/huggingface &> /dev/null; then
-    print_success "✓ Flux.1-schnell model verified"
+if huggingface-cli list black-forest-labs/FLUX.1-dev --cache-dir ~/.cache/huggingface &> /dev/null; then
+    print_success "✓ Flux.1-dev model verified"
 else
-    print_error "✗ Flux.1-schnell model not found in cache"
+    print_error "✗ Flux.1-dev model not found in cache"
     models_ok=false
 fi
 
@@ -143,7 +143,7 @@ if [ "$models_ok" = true ]; then
     echo "   python run.py --sd_version flux --device auto --data_path minimal_text.json"
     echo ""
     echo "📂 Models installed:"
-    echo "   • Flux.1-schnell: ~/.cache/huggingface/hub/"
+    echo "   • Flux.1-dev: ~/.cache/huggingface/hub/"
     echo "   • EfficientSAM: DETECT_SAM/pretrain/efficient_sam_s_gpu.jit"
     echo "   • GroundingDINO: DETECT_SAM/Grounding-DINO/groundingdino_swint_ogc.pth"
 else

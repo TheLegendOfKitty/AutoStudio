@@ -85,7 +85,7 @@ class EfficientModelDownloader:
                 dest_path.unlink()
             return False
     
-    def download_minimal_flux(self, model_name: str = "black-forest-labs/FLUX.1-schnell") -> str:
+    def download_minimal_flux(self, model_name: str = "black-forest-labs/FLUX.1-dev") -> str:
         """
         Download minimal Flux model components
         Returns: path to the downloaded model
@@ -362,7 +362,7 @@ def main():
     downloader.list_downloaded_models()
     
     print("\n📥 Available Downloads:")
-    print("1. Flux.1-schnell (minimal) - ~3-4 GB")
+    print("1. Flux.1-dev (minimal) - ~3-4 GB")
     print("2. Stable Diffusion 1.5 (minimal) - ~2-3 GB") 
     print("3. Clean up old cache files")
     print("4. List downloaded models")

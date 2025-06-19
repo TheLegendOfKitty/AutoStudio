@@ -7,7 +7,7 @@ GGUF (GPT-Generated Unified Format) quantization allows you to run Flux models w
 - **Mac users** (MPS compatibility issues with other quantization methods)
 - **Limited VRAM** systems (4-8GB GPUs)
 - **CPU inference** (faster loading and inference)
-- **Multiple model variants** (run both schnell and dev models)
+- **Multiple model variants** (run both dev and schnell models)
 
 ## Quick Start
 
@@ -55,17 +55,17 @@ python run.py --sd_version flux --quantization Q4_K_S
 
 ### Model Variants
 ```bash
-# Flux.1-schnell (default, faster)
-python run.py --sd_version flux --model_variant schnell --quantization Q5_K_S
+# Flux.1-dev (default, higher quality)
+python run.py --sd_version flux --quantization Q6_K
 
-# Flux.1-dev (higher quality, slower)
-python run.py --sd_version flux --model_variant dev --quantization Q6_K
+# Flux.1-schnell (faster, fewer steps)
+python run.py --sd_version flux --model_variant schnell --quantization Q5_K_S
 ```
 
 ### Pre-downloaded GGUF Files
 ```bash
 # Use your own GGUF file
-python run.py --sd_version flux --gguf_path /path/to/flux1-schnell-Q5_K_M.gguf
+python run.py --sd_version flux --gguf_path /path/to/flux1-dev-Q5_K_M.gguf
 ```
 
 ### Text Generation with Quantization
@@ -152,7 +152,7 @@ pipe = manager.create_quantized_pipeline(
 
 ## Performance Comparison
 
-### Memory Usage (Flux.1-schnell)
+### Memory Usage (Flux.1-dev)
 - **FP16 (Standard)**: ~24 GB VRAM
 - **Q8_0**: ~12 GB VRAM (50% reduction)
 - **Q5_K_M**: ~8.4 GB VRAM (65% reduction)  

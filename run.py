@@ -81,13 +81,13 @@ parser.add_argument("--device", default ='auto', type=str, help="Run Device (aut
 parser.add_argument("--quantize_8bit", action='store_true', help="Enable 8-bit quantization to reduce memory usage")
 parser.add_argument("--quantization", type=str, choices=['Q8_0', 'Q6_K', 'Q5_K_S', 'Q5_1', 'Q5_0', 'Q4_K_S', 'Q4_1', 'Q4_0', 'Q3_K_S', 'Q2_K'], help="GGUF quantization level for Flux models")
 parser.add_argument("--gguf_path", type=str, help="Path to pre-downloaded GGUF model file")
-parser.add_argument("--model_variant", default='schnell', choices=['schnell', 'dev'], help="Flux model variant for GGUF")
+parser.add_argument("--model_variant", default='dev', choices=['schnell', 'dev'], help="Flux model variant (default: dev for higher quality, schnell for speed)")
 
 # Image quality parameters
-parser.add_argument("--num_inference_steps", type=int, help="Number of denoising steps (default: 4 for Flux, 30 for SD)")
+parser.add_argument("--num_inference_steps", type=int, help="Number of denoising steps (default: 20 for Flux-dev, 4 for Flux-schnell, 30 for SD)")
 parser.add_argument("--guidance_scale", type=float, help="Guidance scale for prompt adherence (default: 3.5 for Flux, 7.5 for SD)")
 parser.add_argument("--scheduler", type=str, choices=['euler', 'ddim', 'dpm', 'flow_match'], help="Scheduler type (default: flow_match for Flux, ddim for SD)")
-parser.add_argument("--refine_steps", type=int, help="Number of refinement steps (default: 4 for Flux, 20 for SD)")
+parser.add_argument("--refine_steps", type=int, help="Number of refinement steps (default: 10 for Flux-dev, 4 for Flux-schnell, 20 for SD)")
 parser.add_argument("--max_sequence_length", type=int, default=512, help="Maximum sequence length for text encoder (Flux only)")
 parser.add_argument("--quality_preset", type=str, choices=['fast', 'balanced', 'high_quality'], help="Quality preset that overrides individual parameters")
 
@@ -97,19 +97,35 @@ args = parser.parse_args()
 # Set quality presets
 if args.quality_preset:
     if args.sd_version in ['flux', 'fluxplus']:
-        # Flux quality presets
-        if args.quality_preset == 'fast':
-            args.num_inference_steps = args.num_inference_steps or 2
-            args.guidance_scale = args.guidance_scale or 2.0
-            args.refine_steps = args.refine_steps or 2
-        elif args.quality_preset == 'balanced':
-            args.num_inference_steps = args.num_inference_steps or 4
-            args.guidance_scale = args.guidance_scale or 3.5
-            args.refine_steps = args.refine_steps or 4
-        elif args.quality_preset == 'high_quality':
-            args.num_inference_steps = args.num_inference_steps or 8
-            args.guidance_scale = args.guidance_scale or 5.0
-            args.refine_steps = args.refine_steps or 8
+        # Flux quality presets (adjusted for dev vs schnell)
+        if args.model_variant == 'schnell':
+            # Schnell is optimized for fewer steps
+            if args.quality_preset == 'fast':
+                args.num_inference_steps = args.num_inference_steps or 2
+                args.guidance_scale = args.guidance_scale or 2.0
+                args.refine_steps = args.refine_steps or 2
+            elif args.quality_preset == 'balanced':
+                args.num_inference_steps = args.num_inference_steps or 4
+                args.guidance_scale = args.guidance_scale or 3.5
+                args.refine_steps = args.refine_steps or 4
+            elif args.quality_preset == 'high_quality':
+                args.num_inference_steps = args.num_inference_steps or 8
+                args.guidance_scale = args.guidance_scale or 5.0
+                args.refine_steps = args.refine_steps or 8
+        else:  # dev variant
+            # Dev requires more steps for optimal quality
+            if args.quality_preset == 'fast':
+                args.num_inference_steps = args.num_inference_steps or 12
+                args.guidance_scale = args.guidance_scale or 3.0
+                args.refine_steps = args.refine_steps or 6
+            elif args.quality_preset == 'balanced':
+                args.num_inference_steps = args.num_inference_steps or 20
+                args.guidance_scale = args.guidance_scale or 3.5
+                args.refine_steps = args.refine_steps or 10
+            elif args.quality_preset == 'high_quality':
+                args.num_inference_steps = args.num_inference_steps or 30
+                args.guidance_scale = args.guidance_scale or 4.0
+                args.refine_steps = args.refine_steps or 15
     else:
         # SD quality presets
         if args.quality_preset == 'fast':
@@ -127,10 +143,17 @@ if args.quality_preset:
 
 # Set default values if not specified by user or presets
 if args.sd_version in ['flux', 'fluxplus']:
-    # Flux defaults
-    args.num_inference_steps = args.num_inference_steps or 4
-    args.guidance_scale = args.guidance_scale or 3.5
-    args.refine_steps = args.refine_steps or 4
+    # Flux defaults (adjusted for dev vs schnell)
+    if args.model_variant == 'schnell':
+        # Schnell defaults (optimized for speed)
+        args.num_inference_steps = args.num_inference_steps or 4
+        args.guidance_scale = args.guidance_scale or 3.5
+        args.refine_steps = args.refine_steps or 4
+    else:  # dev variant (default)
+        # Dev defaults (optimized for quality)
+        args.num_inference_steps = args.num_inference_steps or 20
+        args.guidance_scale = args.guidance_scale or 3.5
+        args.refine_steps = args.refine_steps or 10
     args.scheduler = args.scheduler or 'flow_match'
 else:
     # SD defaults
@@ -169,6 +192,8 @@ print('Welcome to the AutoStudio')
 
 # Display image quality settings
 print(f'\n🎨 Image Quality Settings:')
+if args.sd_version in ['flux', 'fluxplus']:
+    print(f'   🤖 Model variant: FLUX.1-{args.model_variant}')
 print(f'   📊 Inference steps: {args.num_inference_steps}')
 print(f'   🎯 Guidance scale: {args.guidance_scale}')
 print(f'   🔧 Scheduler: {args.scheduler}')

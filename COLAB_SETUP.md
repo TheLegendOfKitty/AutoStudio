@@ -165,7 +165,7 @@ drive.mount('/content/drive')
 # Use smaller batch sizes
 !python run.py --sd_version flux --quantization Q4_K_S --repeats 1
 
-# Use faster model variant
+# Use faster model variant (schnell)
 !python run.py --sd_version flux --model_variant schnell --quantization Q5_K_S
 ```
 
