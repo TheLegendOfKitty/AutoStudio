@@ -35,6 +35,7 @@ if torch.backends.mps.is_available():
 from PIL import Image
 from safetensors.torch import load_file
 from diffusers import DDIMScheduler, AutoencoderKL
+from transformers import BitsAndBytesConfig
 # Import SD models only when needed
 if len(sys.argv) > 1 and '--sd_version' in sys.argv:
     sd_version_idx = sys.argv.index('--sd_version') + 1
@@ -77,6 +78,10 @@ parser.add_argument("--do_latent_guidance", default = True, type=bool, help="Lat
 parser.add_argument("--is_editing", default = False, type=bool, help="Multi-turn editing mode")
 parser.add_argument("--is_CMIGBENCH", default = False, type=bool, help="Multi-turn editing mode")
 parser.add_argument("--device", default ='auto', type=str, help="Run Device (auto/cuda/mps/cpu)")
+parser.add_argument("--quantize_8bit", action='store_true', help="Enable 8-bit quantization to reduce memory usage")
+parser.add_argument("--quantization", type=str, choices=['Q8_0', 'Q6_K', 'Q5_K_M', 'Q5_K_S', 'Q4_K_M', 'Q3_K_M'], help="GGUF quantization level for Flux models")
+parser.add_argument("--gguf_path", type=str, help="Path to pre-downloaded GGUF model file")
+parser.add_argument("--model_variant", default='schnell', choices=['schnell', 'dev'], help="Flux model variant for GGUF")
 
 
 args = parser.parse_args()
@@ -204,55 +209,70 @@ elif args.sd_version == 'xlplus':
     autostudio = AUTOSTUDIOXLPlus(sd_pipe, image_encoder_path, ip_ckpt, device, num_tokens=16)
 
 elif args.sd_version == 'flux':
-    # Check for local models
-    local_paths = [
-        "./models/cache/models--black-forest-labs--FLUX.1-schnell/snapshots/741f7c3ce8b383c54771c7003378a50191e9efe9",
-        "./models/flux-schnell",      # Full precision local
-    ]
-    
-    base_model_path = "black-forest-labs/FLUX.1-schnell"
-    print('Loading Flux.1-schnell model from HuggingFace (will reuse cached components)...')
-    
     image_encoder_path = "openai/clip-vit-base-patch32"
     ip_ckpt = "./models/dummy_ip.bin"  # Placeholder for now
     
-    print('Loading Flux model with reduced precision...')
+    # Check if GGUF quantization is requested
+    if args.quantization or args.gguf_path:
+        print('🎯 Loading Flux with GGUF quantization...')
+        from flux_quantization import FluxGGUFManager, get_memory_info
+        
+        manager = FluxGGUFManager()
+        
+        # Auto-recommend quantization if not specified
+        if not args.quantization and not args.gguf_path:
+            memory_gb = get_memory_info(device)
+            args.quantization = manager.recommend_quantization(device, memory_gb)
+            print(f"💡 Auto-selected quantization: {args.quantization}")
+        
+        # Create quantized pipeline
+        flux_pipe = manager.create_quantized_pipeline(
+            model_variant=args.model_variant,
+            quantization=args.quantization,
+            device=device,
+            gguf_path=args.gguf_path
+        )
+        
+        if not flux_pipe:
+            print("❌ Failed to load quantized model, falling back to standard loading...")
+            # Fall back to standard loading
+            args.quantization = None
+            args.gguf_path = None
+        else:
+            print('✅ GGUF quantized Flux loaded successfully!')
     
-    # Use appropriate dtype for device (float32 for CPU/MPS, float16 for CUDA)
-    if device == 'cpu':
-        dtype = torch.float32
-    elif device == 'mps':
-        # MPS works better with float32 for stability, but use float16 to save memory
-        dtype = torch.float16
-        print('Using float16 for MPS to optimize memory usage')
-    else:  # CUDA
-        dtype = torch.float16
+    # Standard Flux loading (fallback or when quantization not requested)
+    if not args.quantization and not args.gguf_path:
+        base_model_path = f"black-forest-labs/FLUX.1-{args.model_variant}"
+        print(f'Loading {base_model_path} model from HuggingFace...')
+        
+        # Use appropriate dtype for device
+        if device == 'cpu':
+            dtype = torch.float32
+        elif device == 'mps':
+            dtype = torch.float16
+            print('Using float16 for MPS to optimize memory usage')
+        else:  # CUDA
+            dtype = torch.float16
+        
+        # Memory optimization
+        flux_kwargs = {
+            'torch_dtype': dtype,
+            'low_cpu_mem_usage': True,
+        }
+        
+        print(f'Loading Flux pipeline with dtype={dtype}, device={device}...')
+        flux_pipe = FluxPipeline.from_pretrained(
+            base_model_path,
+            **flux_kwargs
+        )
+        print('Standard Flux pipeline loaded successfully!')
     
-    # Add memory optimization
-    flux_kwargs = {
-        'torch_dtype': dtype,
-        'low_cpu_mem_usage': True,
-    }
-    
-    # Skip device_map for MPS to avoid compatibility issues
-    if device == 'mps':
-        print('Loading without device mapping for MPS compatibility')
-    elif device == 'cuda':
-        # Only use device mapping for CUDA if needed
-        print('Loading for CUDA device')
-    
-    print(f'Loading Flux pipeline with dtype={dtype}, device={device}...')
-    flux_pipe = FluxPipeline.from_pretrained(
-        base_model_path,
-        **flux_kwargs
-    )
-    
-    print('Flux pipeline loaded successfully, initializing AutoStudio...')
-    
+    # Initialize AutoStudio wrapper
     try:
         print('Initializing AUTOSTUDIOFLUX wrapper...')
         autostudio = AUTOSTUDIOFLUX(flux_pipe, image_encoder_path, ip_ckpt, device)
-        print('Successfully loaded Flux model with MPS acceleration')
+        print('Successfully loaded Flux model!')
     except Exception as e:
         print(f'Error initializing AUTOSTUDIOFLUX: {e}')
         print('Falling back to CPU device...')

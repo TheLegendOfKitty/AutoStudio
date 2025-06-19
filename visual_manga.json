@@ -1,0 +1,113 @@
+{
+    "visual_storytelling": {
+        "turn 1": {
+            "size": [768, 1024],
+            "caption": "manga panel, young determined hero pointing toward horizon, fantasy village background, dramatic lighting, adventure begins",
+            "objects": [
+                [
+                    "young hero, spiky brown hair, blue tunic, determined expression, pointing dramatically forward",
+                    [150, 250, 300, 450],
+                    "1"
+                ]
+            ],
+            "background": "fantasy village, thatched roof houses, rolling hills, sunset sky, manga art style",
+            "negative": "modern buildings, realistic photography, sad expression"
+        },
+        "turn 2": {
+            "size": [768, 1024],
+            "caption": "dynamic action manga panel, hero running through dense forest, motion lines, cape flowing, speed and urgency",
+            "objects": [
+                [
+                    "young hero, running pose, cape billowing, focused determined face, motion blur",
+                    [100, 300, 350, 500],
+                    "1"
+                ]
+            ],
+            "background": "thick forest, tall trees, dappled sunlight, speed lines, manga style movement",
+            "negative": "static pose, clear sharp details, no motion effects"
+        },
+        "turn 3": {
+            "size": [768, 1024],
+            "caption": "intimidating manga panel, massive dark guardian emerging from cave shadows, glowing red eyes, threatening presence",
+            "objects": [
+                [
+                    "imposing dark guardian, towering figure, glowing red eyes, dark armor, menacing stance",
+                    [200, 50, 350, 800],
+                    "2"
+                ]
+            ],
+            "background": "dark cave mouth, jagged rocks, ominous shadows, mist, manga art style",
+            "negative": "bright cheerful lighting, small guardian, friendly appearance"
+        },
+        "turn 4": {
+            "size": [768, 1024],
+            "caption": "close-up manga panel, hero's nervous face with large sweat drop, worried eyes, psychological tension",
+            "objects": [
+                [
+                    "young hero, close-up face, nervous sweat drop, worried wide eyes, gulp expression",
+                    [200, 300, 300, 400],
+                    "1"
+                ]
+            ],
+            "background": "blurred cave interior, dramatic shadows on face, manga style emotional focus",
+            "negative": "confident expression, no emotional indicators, bright lighting"
+        },
+        "turn 5": {
+            "size": [768, 1024],
+            "caption": "explosive manga battle panel, sword clash creating sparks, dynamic fighting poses, intense action choreography",
+            "objects": [
+                [
+                    "young hero, sword strike pose, gritted teeth, attack stance, dynamic movement",
+                    [50, 250, 250, 400],
+                    "1"
+                ],
+                [
+                    "dark guardian, defensive block, dark blade, powerful counterpose, intense focus",
+                    [450, 200, 250, 500],
+                    "2"
+                ]
+            ],
+            "background": "cave chamber, flying sparks, impact effects, dynamic lines, manga battle scene",
+            "negative": "peaceful interaction, no action effects, static standing poses"
+        },
+        "turn 6": {
+            "size": [768, 1024],
+            "caption": "touching manga panel, guardian's transformation to peaceful mentor, offering sacred glowing sword with respect",
+            "objects": [
+                [
+                    "dark guardian, now calm, respectful bow, offering glowing sword, wise expression",
+                    [200, 200, 350, 600],
+                    "2"
+                ]
+            ],
+            "background": "mystical cave chamber, soft golden light, floating magical particles, serene atmosphere",
+            "negative": "hostile expression, dark threatening mood, no magical glow"
+        },
+        "turn 7": {
+            "size": [768, 1024],
+            "caption": "awe-inspiring manga panel, hero's amazed reaction to legendary sword, magical radiance, destiny moment",
+            "objects": [
+                [
+                    "young hero, awestruck expression, wide sparkling eyes, reaching hands, emotional wonder",
+                    [150, 350, 300, 400],
+                    "1"
+                ]
+            ],
+            "background": "legendary sword floating in golden light, magical sparkles, ethereal glow, manga style magic",
+            "negative": "dull ordinary sword, unimpressed expression, no magical effects"
+        },
+        "turn 8": {
+            "size": [768, 1024],
+            "caption": "epic manga finale, hero triumphant silhouette against bright sky, sword raised high, new adventure awaits",
+            "objects": [
+                [
+                    "young hero, victorious silhouette, sword raised to sky, cape flowing, heroic pose",
+                    [200, 150, 350, 700],
+                    "1"
+                ]
+            ],
+            "background": "cave exit opening to vast landscape, bright sunlight, epic clouds, adventurous horizon",
+            "negative": "enclosed space, sad ending, weapon lowered, defeated posture"
+        }
+    }
+}
