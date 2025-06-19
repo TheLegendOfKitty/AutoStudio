@@ -1,0 +1,11 @@
+{
+    "test": {
+        "turn 1": {
+            "size": [1024, 1024],
+            "caption": "a simple white sign with black text reading 'HELLO WORLD' in bold letters",
+            "objects": [],
+            "background": "plain background",
+            "negative": "blurry, no text"
+        }
+    }
+}

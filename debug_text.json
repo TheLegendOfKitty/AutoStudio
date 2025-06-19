@@ -1,0 +1,20 @@
+{
+    "text_debug": {
+        "turn 1": {
+            "size": [1024, 1024],
+            "caption": "masterpiece, best quality, 8k uhd, epic space battle scene with large text banner reading 'GALACTIC WAR' in bold, futuristic, glowing white letters centered at the top of the image with dramatic glow effect",
+            "objects": [],
+            "background": "space battle, starships, laser beams, planets, cinematic lighting",
+            "negative": "blurry text, unreadable letters, no text, missing words"
+        }
+    },
+    "simple_sign": {
+        "turn 1": {
+            "size": [1024, 1024],
+            "caption": "masterpiece, best quality, 8k uhd, rustic coffee shop storefront with wooden sign clearly displaying 'COFFEE SHOP' in large, carved, brown lettering on a wooden background, centered on the building facade",
+            "objects": [],
+            "background": "quaint street, morning light, cozy atmosphere",
+            "negative": "blurry text, illegible writing, no sign, missing text"
+        }
+    }
+}

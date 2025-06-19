@@ -144,7 +144,24 @@ def get_global_prompt(prompt_book):
             character_prompts = character_prompts + " " + str(obj_counts[prompt_book['obj_ids'][i]]) + character_prompt + ","
             obj_counts[prompt_book['obj_ids'][i]] = -1
         
-    global_prompt = f"{prompt_book['bg_prompt']} with{character_prompts}"
+    # Check if this is a text generation prompt (preserve original caption)
+    original_caption = prompt_book.get('prompt', '')
+    text_indicators = [
+        'text', 'sign', 'letter', 'word', 'writing', 'font', 'typography', 
+        'banner', 'title', 'label', 'poster', 'logo', 'book', 'magazine',
+        'newspaper', 'card', 'menu', 'note', 'graffiti', 'neon', 'display',
+        'screen', 'billboard', 'advertisement', 'inscription', 'caption',
+        'heading', 'script', 'message', 'quote', "'", '"'
+    ]
+    
+    if any(indicator in original_caption.lower() for indicator in text_indicators):
+        # For text generation, use original caption to preserve formatting
+        print("🔤 Text generation detected - preserving original caption format")
+        global_prompt = original_caption
+    else:
+        # Standard AutoStudio prompt reconstruction
+        global_prompt = f"{prompt_book['bg_prompt']} with{character_prompts}"
+    
     prompt_book['global_prompt'] = global_prompt
     return prompt_book
 
