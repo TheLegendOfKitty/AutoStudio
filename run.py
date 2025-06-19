@@ -79,7 +79,7 @@ parser.add_argument("--is_editing", default = False, type=bool, help="Multi-turn
 parser.add_argument("--is_CMIGBENCH", default = False, type=bool, help="Multi-turn editing mode")
 parser.add_argument("--device", default ='auto', type=str, help="Run Device (auto/cuda/mps/cpu)")
 parser.add_argument("--quantize_8bit", action='store_true', help="Enable 8-bit quantization to reduce memory usage")
-parser.add_argument("--quantization", type=str, choices=['Q8_0', 'Q6_K', 'Q5_K_M', 'Q5_K_S', 'Q4_K_M', 'Q3_K_M'], help="GGUF quantization level for Flux models")
+parser.add_argument("--quantization", type=str, choices=['Q8_0', 'Q6_K', 'Q5_K_S', 'Q5_1', 'Q5_0', 'Q4_K_S', 'Q4_1', 'Q4_0', 'Q3_K_S', 'Q2_K'], help="GGUF quantization level for Flux models")
 parser.add_argument("--gguf_path", type=str, help="Path to pre-downloaded GGUF model file")
 parser.add_argument("--model_variant", default='schnell', choices=['schnell', 'dev'], help="Flux model variant for GGUF")
 

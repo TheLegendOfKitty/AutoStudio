@@ -35,29 +35,53 @@ class FluxGGUFManager:
             "description": "Excellent quality, good balance",
             "file_suffix": "Q6_K.gguf"
         },
-        "Q5_K_M": {
-            "memory_reduction": "65%",
-            "quality": "97% quality, barely noticeable loss",
-            "description": "Recommended for most users",
-            "file_suffix": "Q5_K_M.gguf"
-        },
         "Q5_K_S": {
             "memory_reduction": "65%",
             "quality": "96% quality, slight loss",
-            "description": "Good for mid-range systems", 
+            "description": "Recommended for most users", 
             "file_suffix": "Q5_K_S.gguf"
         },
-        "Q4_K_M": {
-            "memory_reduction": "70%",
-            "quality": "94% quality, noticeable but acceptable",
-            "description": "Good for lower-end systems",
-            "file_suffix": "Q4_K_M.gguf"
+        "Q5_1": {
+            "memory_reduction": "67%",
+            "quality": "95% quality, good for most cases",
+            "description": "Alternative 5-bit quantization",
+            "file_suffix": "Q5_1.gguf"
         },
-        "Q3_K_M": {
+        "Q5_0": {
+            "memory_reduction": "67%",
+            "quality": "95% quality, legacy format",
+            "description": "Legacy 5-bit quantization",
+            "file_suffix": "Q5_0.gguf"
+        },
+        "Q4_K_S": {
+            "memory_reduction": "70%",
+            "quality": "93% quality, noticeable but acceptable",
+            "description": "Good for lower-end systems",
+            "file_suffix": "Q4_K_S.gguf"
+        },
+        "Q4_1": {
+            "memory_reduction": "72%",
+            "quality": "92% quality, some loss",
+            "description": "Alternative 4-bit quantization",
+            "file_suffix": "Q4_1.gguf"
+        },
+        "Q4_0": {
+            "memory_reduction": "72%",
+            "quality": "92% quality, legacy format",
+            "description": "Legacy 4-bit quantization",
+            "file_suffix": "Q4_0.gguf"
+        },
+        "Q3_K_S": {
             "memory_reduction": "75%",
-            "quality": "90% quality, some degradation",
+            "quality": "88% quality, noticeable degradation",
             "description": "For very limited VRAM",
-            "file_suffix": "Q3_K_M.gguf"
+            "file_suffix": "Q3_K_S.gguf"
+        },
+        "Q2_K": {
+            "memory_reduction": "80%",
+            "quality": "75% quality, significant loss",
+            "description": "Only for extremely limited systems",
+            "file_suffix": "Q2_K.gguf"
         }
     }
     
@@ -86,7 +110,7 @@ class FluxGGUFManager:
         """Recommend quantization level based on device and memory"""
         
         if device == 'cpu':
-            return "Q5_K_M"  # Good balance for CPU inference
+            return "Q5_K_S"  # Good balance for CPU inference
         elif device == 'mps':
             return "Q6_K"    # Mac has unified memory, can handle higher quality
         elif device == 'cuda':
@@ -96,13 +120,13 @@ class FluxGGUFManager:
                 elif available_memory_gb >= 12:
                     return "Q6_K"    # Mid-high GPU
                 elif available_memory_gb >= 8:
-                    return "Q5_K_M"  # Mid-range GPU
+                    return "Q5_K_S"  # Mid-range GPU
                 else:
-                    return "Q4_K_M"  # Low-end GPU
+                    return "Q4_K_S"  # Low-end GPU
             else:
-                return "Q5_K_M"  # Safe default
+                return "Q5_K_S"  # Safe default
         else:
-            return "Q5_K_M"  # Safe default
+            return "Q5_K_S"  # Safe default
     
     def list_available_files(self, model_variant: str = "schnell") -> Dict[str, str]:
         """List available GGUF files for a model variant"""

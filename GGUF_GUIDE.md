@@ -32,29 +32,31 @@ python flux_quantization.py
 |--------|------------------|---------|----------|
 | **Q8_0** | 50% | 99% identical | High-end GPUs (16GB+) |
 | **Q6_K** | 60% | 98% quality | Mid-high GPUs (12-16GB) |
-| **Q5_K_M** | 65% | 97% quality | **Most users** (8-12GB) |
-| **Q5_K_S** | 65% | 96% quality | Mid-range GPUs |
-| **Q4_K_M** | 70% | 94% quality | Low VRAM (6-8GB) |
-| **Q3_K_M** | 75% | 90% quality | Very limited VRAM (4-6GB) |
+| **Q5_K_S** | 65% | 96% quality | **Most users** (8-12GB) |
+| **Q5_1** | 67% | 95% quality | Alternative 5-bit |
+| **Q4_K_S** | 70% | 93% quality | Low VRAM (6-8GB) |
+| **Q4_1** | 72% | 92% quality | Alternative 4-bit |
+| **Q3_K_S** | 75% | 88% quality | Very limited VRAM (4-6GB) |
+| **Q2_K** | 80% | 75% quality | Extremely limited systems |
 
 ## Usage Examples
 
 ### Basic Usage
 ```bash
 # Auto-recommended quantization
-python run.py --sd_version flux --quantization Q5_K_M
+python run.py --sd_version flux --quantization Q5_K_S
 
 # High quality (if you have VRAM)
 python run.py --sd_version flux --quantization Q8_0
 
 # Low VRAM systems
-python run.py --sd_version flux --quantization Q4_K_M
+python run.py --sd_version flux --quantization Q4_K_S
 ```
 
 ### Model Variants
 ```bash
 # Flux.1-schnell (default, faster)
-python run.py --sd_version flux --model_variant schnell --quantization Q5_K_M
+python run.py --sd_version flux --model_variant schnell --quantization Q5_K_S
 
 # Flux.1-dev (higher quality, slower)
 python run.py --sd_version flux --model_variant dev --quantization Q6_K
