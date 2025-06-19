@@ -24,9 +24,9 @@ Run these commands in separate Colab cells:
 
 # Step 2: Install compatible versions
 !pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-!pip install transformers==4.44.0
-!pip install diffusers==0.30.0
-!pip install accelerate==0.33.0
+!pip install transformers>=4.44.0
+!pip install diffusers>=0.31.0
+!pip install accelerate>=0.33.0
 
 # Step 3: Install GGUF and other dependencies
 !pip install gguf safetensors pillow numpy matplotlib opencv-python huggingface_hub psutil inflect

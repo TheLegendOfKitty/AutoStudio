@@ -51,9 +51,9 @@ def fix_colab_dependencies():
     print("Installing transformers...")
     run_command("pip install transformers==4.44.0")
     
-    # Install compatible diffusers version
-    print("Installing diffusers...")
-    run_command("pip install diffusers==0.30.0")
+    # Install compatible diffusers version with GGUF support
+    print("Installing diffusers with GGUF support...")
+    run_command("pip install diffusers>=0.31.0")
     
     # Install other required packages
     print("Installing additional packages...")
