@@ -1,0 +1,125 @@
+{
+    "balanced_manga": {
+        "character_definitions": {
+            "1": {
+                "name": "Hero",
+                "core_features": "young male, spiky black hair, green eyes, blue tunic with brown leather belt, medium build, friendly face",
+                "priority": "high"
+            },
+            "2": {
+                "name": "Guardian", 
+                "core_features": "tall imposing figure, glowing red eyes, black plate armor, dark hood, mysterious aura",
+                "priority": "high"
+            }
+        },
+        "turn 1": {
+            "size": [768, 1024],
+            "caption": "manga panel, fantasy village background, young hero with determined expression pointing forward, small speech bubble with 'I must find the legendary sword!' in white text",
+            "objects": [
+                [
+                    "determined expression, pointing dramatically forward",
+                    [150, 250, 300, 450],
+                    "1"
+                ]
+            ],
+            "background": "fantasy village, wooden houses, sunset sky, manga art style",
+            "negative": "text overwhelming image, large text, blurry character details"
+        },
+        "turn 2": {
+            "size": [768, 1024],
+            "caption": "dynamic manga panel, hero running through forest, motion lines, small 'WHOOSH!' sound effect in corner",
+            "objects": [
+                [
+                    "running pose, motion blur, focused expression",
+                    [100, 300, 350, 500],
+                    "1"
+                ]
+            ],
+            "background": "forest path, trees, speed lines, manga style action scene",
+            "negative": "large text effects, overwhelming sound effects, static pose"
+        },
+        "turn 3": {
+            "size": [768, 1024],
+            "caption": "dramatic manga panel, intimidating dark guardian at cave entrance, small speech bubble 'Who dares enter?' in red text, ominous atmosphere",
+            "objects": [
+                [
+                    "intimidating stance, arms crossed, menacing presence",
+                    [200, 100, 350, 700],
+                    "2"
+                ]
+            ],
+            "background": "dark cave entrance, rocky formations, ominous shadows, manga art style",
+            "negative": "bright cheerful colors, small guardian, text dominating scene"
+        },
+        "turn 4": {
+            "size": [768, 1024],
+            "caption": "manga panel showing hero's worried expression, sweat drop, small thought bubble 'The guardian...' in gray text, detailed character focus",
+            "objects": [
+                [
+                    "nervous expression, sweat drop, worried eyes, thinking pose",
+                    [200, 300, 300, 450],
+                    "1"
+                ]
+            ],
+            "background": "cave interior, stone walls, dim lighting, manga style",
+            "negative": "confident expression, large text bubble, bright lighting"
+        },
+        "turn 5": {
+            "size": [768, 1024],
+            "caption": "intense manga battle panel, two figures clashing with swords, dynamic poses, small 'CLASH!' effect, action focus",
+            "objects": [
+                [
+                    "sword raised, attacking stance, determined expression",
+                    [50, 250, 250, 400],
+                    "1"
+                ],
+                [
+                    "blocking with dark blade, powerful defensive stance, fierce expression",
+                    [450, 200, 250, 500],
+                    "2"
+                ]
+            ],
+            "background": "cave chamber, sparks flying, battle scene, dynamic composition, manga style",
+            "negative": "peaceful scene, large text effects overwhelming action, static poses"
+        },
+        "turn 6": {
+            "size": [768, 1024],
+            "caption": "peaceful manga panel, guardian offering glowing sword, respectful gesture, small speech bubble 'You are worthy' in blue text",
+            "objects": [
+                [
+                    "now peaceful, offering sword, respectful bow, benevolent expression",
+                    [200, 200, 350, 600],
+                    "2"
+                ]
+            ],
+            "background": "mystical cave chamber, soft golden glow, peaceful atmosphere, manga art style",
+            "negative": "hostile expression, large text dominating, dark threatening mood"
+        },
+        "turn 7": {
+            "size": [768, 1024],
+            "caption": "manga panel focusing on hero's amazed expression reaching for magical sword, small text 'The Blade of Destiny!' golden letters, character emotion priority",
+            "objects": [
+                [
+                    "amazed wide eyes, both hands reaching forward, awestruck expression",
+                    [150, 350, 300, 400],
+                    "1"
+                ]
+            ],
+            "background": "magical floating sword, golden sparkles, mystical light, manga style",
+            "negative": "text overwhelming sword, dull expression, no magical effects"
+        },
+        "turn 8": {
+            "size": [768, 1024],
+            "caption": "triumphant manga finale, hero holding sword against bright sky, epic pose, discrete 'TO BE CONTINUED' text at bottom edge",
+            "objects": [
+                [
+                    "victorious pose, sword raised high, confident smile, triumphant stance",
+                    [200, 150, 350, 700],
+                    "1"
+                ]
+            ],
+            "background": "cave exit, bright sunlight, epic vista, clouds, manga style finale",
+            "negative": "large intrusive text, sad expression, dark gloomy ending"
+        }
+    }
+}

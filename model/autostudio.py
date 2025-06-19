@@ -1120,9 +1120,29 @@ class AUTOSTUDIOFLUX:
                 character_weights.append(0.0)
                 print(f"🆕 New character introduction: {obj_id}")
         
-        # Build prompt with character descriptions
+        # Build hierarchical prompt with character descriptions
         if character_descriptions:
-            character_prompt = ", ".join(character_descriptions)
+            # Check if we have character definitions in the prompt book
+            character_definitions = prompt_book.get('character_definitions', {})
+            
+            # Build character prompts with hierarchy: core features (high weight) + situational details (lower weight)
+            enhanced_character_descriptions = []
+            for i, obj_id in enumerate(prompt_book['obj_ids']):
+                situational_desc = prompt_book['gen_boxes'][i][0]  # Current situational description
+                
+                if str(obj_id) in character_definitions:
+                    # Hierarchical approach: Core features + situational
+                    core_features = character_definitions[str(obj_id)]['core_features']
+                    enhanced_desc = f"({core_features}, {situational_desc})"
+                    enhanced_character_descriptions.append(enhanced_desc)
+                    print(f"🎯 Hierarchical character {obj_id}: CORE[{core_features}] + SITUATIONAL[{situational_desc}]")
+                else:
+                    # Fallback to original description
+                    enhanced_desc = f"({situational_desc})"
+                    enhanced_character_descriptions.append(enhanced_desc)
+                    print(f"🔄 Standard character {obj_id}: {situational_desc}")
+            
+            character_prompt = ", ".join(enhanced_character_descriptions)
             bg_prompt = prompt_book.get('bg_prompt', prompt_book.get('background', ''))
             scene_prompt = prompt_book.get('prompt', prompt_book.get('caption', ''))
             main_prompt = f"{bg_prompt}, {character_prompt}, {scene_prompt}"
@@ -1952,9 +1972,29 @@ class AUTOSTUDIOFLUX:
                 character_weights.append(0.0)
                 print(f"🆕 New character introduction: {obj_id}")
         
-        # Build prompt with character descriptions
+        # Build hierarchical prompt with character descriptions
         if character_descriptions:
-            character_prompt = ", ".join(character_descriptions)
+            # Check if we have character definitions in the prompt book
+            character_definitions = prompt_book.get('character_definitions', {})
+            
+            # Build character prompts with hierarchy: core features (high weight) + situational details (lower weight)
+            enhanced_character_descriptions = []
+            for i, obj_id in enumerate(prompt_book['obj_ids']):
+                situational_desc = prompt_book['gen_boxes'][i][0]  # Current situational description
+                
+                if str(obj_id) in character_definitions:
+                    # Hierarchical approach: Core features + situational
+                    core_features = character_definitions[str(obj_id)]['core_features']
+                    enhanced_desc = f"({core_features}, {situational_desc})"
+                    enhanced_character_descriptions.append(enhanced_desc)
+                    print(f"🎯 Hierarchical character {obj_id}: CORE[{core_features}] + SITUATIONAL[{situational_desc}]")
+                else:
+                    # Fallback to original description
+                    enhanced_desc = f"({situational_desc})"
+                    enhanced_character_descriptions.append(enhanced_desc)
+                    print(f"🔄 Standard character {obj_id}: {situational_desc}")
+            
+            character_prompt = ", ".join(enhanced_character_descriptions)
             bg_prompt = prompt_book.get('bg_prompt', prompt_book.get('background', ''))
             scene_prompt = prompt_book.get('prompt', prompt_book.get('caption', ''))
             main_prompt = f"{bg_prompt}, {character_prompt}, {scene_prompt}"

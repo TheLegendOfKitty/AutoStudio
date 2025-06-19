@@ -446,6 +446,7 @@ for dialogue in instructions:
             "extra_neg_prompt": neg_prompt,
             "obj_ids":obj_ids,
             "have_ref":obj_ids.copy(), 
+            "character_definitions": instructions[dialogue].get('character_definitions', {}),
         }
 
         prompt_book = get_global_prompt(prompt_book)
