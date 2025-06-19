@@ -14,7 +14,7 @@
         },
         "turn 1": {
             "size": [768, 1024],
-            "caption": "manga panel, fantasy village background, young hero with determined expression pointing forward, small speech bubble with 'I must find the legendary sword!' in white text",
+            "caption": "traditional black and white manga panel with screentones, fantasy village background, young hero with determined expression pointing forward, small speech bubble with 'I must find the legendary sword!' in white text, panel borders",
             "objects": [
                 [
                     "determined expression, pointing dramatically forward",
@@ -22,12 +22,12 @@
                     "1"
                 ]
             ],
-            "background": "fantasy village, wooden houses, sunset sky, manga art style",
-            "negative": "text overwhelming image, large text, blurry character details"
+            "background": "fantasy village, wooden houses, sunset sky, black and white manga art style, screentones, halftone patterns, traditional manga shading",
+            "negative": "color, full color, photorealistic, text overwhelming image, large text, blurry character details"
         },
         "turn 2": {
             "size": [768, 1024],
-            "caption": "dynamic manga panel, hero running through forest, motion lines, small 'WHOOSH!' sound effect in corner",
+            "caption": "dynamic black and white manga panel with screentones, hero running through forest, motion lines, small 'WHOOSH!' sound effect in corner, panel borders",
             "objects": [
                 [
                     "running pose, motion blur, focused expression",
@@ -35,12 +35,12 @@
                     "1"
                 ]
             ],
-            "background": "forest path, trees, speed lines, manga style action scene",
-            "negative": "large text effects, overwhelming sound effects, static pose"
+            "background": "forest path, trees, speed lines, black and white manga style action scene, screentones, halftone shading, traditional manga effects",
+            "negative": "color, full color, photorealistic, large text effects, overwhelming sound effects, static pose"
         },
         "turn 3": {
             "size": [768, 1024],
-            "caption": "dramatic manga panel, intimidating dark guardian at cave entrance, small speech bubble 'Who dares enter?' in red text, ominous atmosphere",
+            "caption": "dramatic black and white manga panel with screentones, intimidating dark guardian at cave entrance, small speech bubble 'Who dares enter?' in white text, ominous atmosphere, panel borders",
             "objects": [
                 [
                     "intimidating stance, arms crossed, menacing presence",
@@ -48,12 +48,12 @@
                     "2"
                 ]
             ],
-            "background": "dark cave entrance, rocky formations, ominous shadows, manga art style",
-            "negative": "bright cheerful colors, small guardian, text dominating scene"
+            "background": "dark cave entrance, rocky formations, ominous shadows, black and white manga art style, heavy screentones, dramatic shading",
+            "negative": "color, full color, photorealistic, bright cheerful colors, small guardian, text dominating scene"
         },
         "turn 4": {
             "size": [768, 1024],
-            "caption": "manga panel showing hero's worried expression, sweat drop, small thought bubble 'The guardian...' in gray text, detailed character focus",
+            "caption": "black and white manga panel with screentones showing hero's worried expression, sweat drop, small thought bubble 'The guardian...' in white text, detailed character focus, panel borders",
             "objects": [
                 [
                     "nervous expression, sweat drop, worried eyes, thinking pose",
@@ -61,12 +61,12 @@
                     "1"
                 ]
             ],
-            "background": "cave interior, stone walls, dim lighting, manga style",
-            "negative": "confident expression, large text bubble, bright lighting"
+            "background": "cave interior, stone walls, dim lighting, black and white manga style, screentones, traditional manga shading",
+            "negative": "color, full color, photorealistic, confident expression, large text bubble, bright lighting"
         },
         "turn 5": {
             "size": [768, 1024],
-            "caption": "intense manga battle panel, two figures clashing with swords, dynamic poses, small 'CLASH!' effect, action focus",
+            "caption": "intense black and white manga battle panel with screentones, two figures clashing with swords, dynamic poses, small 'CLASH!' effect, action focus, panel borders",
             "objects": [
                 [
                     "sword raised, attacking stance, determined expression",
@@ -79,12 +79,12 @@
                     "2"
                 ]
             ],
-            "background": "cave chamber, sparks flying, battle scene, dynamic composition, manga style",
-            "negative": "peaceful scene, large text effects overwhelming action, static poses"
+            "background": "cave chamber, sparks flying, battle scene, dynamic composition, black and white manga style, action screentones, speed lines",
+            "negative": "color, full color, photorealistic, peaceful scene, large text effects overwhelming action, static poses"
         },
         "turn 6": {
             "size": [768, 1024],
-            "caption": "peaceful manga panel, guardian offering glowing sword, respectful gesture, small speech bubble 'You are worthy' in blue text",
+            "caption": "peaceful black and white manga panel with screentones, guardian offering glowing sword, respectful gesture, small speech bubble 'You are worthy' in white text, panel borders",
             "objects": [
                 [
                     "now peaceful, offering sword, respectful bow, benevolent expression",
@@ -92,12 +92,12 @@
                     "2"
                 ]
             ],
-            "background": "mystical cave chamber, soft golden glow, peaceful atmosphere, manga art style",
-            "negative": "hostile expression, large text dominating, dark threatening mood"
+            "background": "mystical cave chamber, soft glow effect with screentones, peaceful atmosphere, black and white manga art style, gentle shading",
+            "negative": "color, full color, photorealistic, hostile expression, large text dominating, dark threatening mood"
         },
         "turn 7": {
             "size": [768, 1024],
-            "caption": "manga panel focusing on hero's amazed expression reaching for magical sword, small text 'The Blade of Destiny!' golden letters, character emotion priority",
+            "caption": "black and white manga panel with screentones focusing on hero's amazed expression reaching for magical sword, small text 'The Blade of Destiny!' in white letters, character emotion priority, panel borders",
             "objects": [
                 [
                     "amazed wide eyes, both hands reaching forward, awestruck expression",
@@ -105,12 +105,12 @@
                     "1"
                 ]
             ],
-            "background": "magical floating sword, golden sparkles, mystical light, manga style",
-            "negative": "text overwhelming sword, dull expression, no magical effects"
+            "background": "magical floating sword, sparkles with screentone effects, mystical light patterns, black and white manga style, traditional shading",
+            "negative": "color, full color, photorealistic, text overwhelming sword, dull expression, no magical effects"
         },
         "turn 8": {
             "size": [768, 1024],
-            "caption": "triumphant manga finale, hero holding sword against bright sky, epic pose, discrete 'TO BE CONTINUED' text at bottom edge",
+            "caption": "triumphant black and white manga finale with screentones, hero holding sword against bright sky, epic pose, discrete 'TO BE CONTINUED' text at bottom edge, panel borders",
             "objects": [
                 [
                     "victorious pose, sword raised high, confident smile, triumphant stance",
@@ -118,8 +118,8 @@
                     "1"
                 ]
             ],
-            "background": "cave exit, bright sunlight, epic vista, clouds, manga style finale",
-            "negative": "large intrusive text, sad expression, dark gloomy ending"
+            "background": "cave exit, bright sunlight with screentone effects, epic vista, clouds, black and white manga style finale, dramatic shading",
+            "negative": "color, full color, photorealistic, large intrusive text, sad expression, dark gloomy ending"
         }
     }
 }
