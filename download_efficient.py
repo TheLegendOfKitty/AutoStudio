@@ -181,8 +181,8 @@ class EfficientModelDownloader:
             
             print(f"📊 Transformer split into {len(unique_files)} files")
             
-            # Download only the first few essential parts for basic functionality
-            essential_parts = sorted(list(unique_files))[:2]  # Download only first 2 parts
+            # Download all transformer parts for complete functionality
+            essential_parts = sorted(list(unique_files))  # Download ALL parts
             
             for file_name in essential_parts:
                 file_path = f"transformer/{file_name}"
@@ -200,8 +200,8 @@ class EfficientModelDownloader:
                 else:
                     print(f"⏭️  {file_name} (cached)")
             
-            print(f"⚠️  Note: Downloaded {len(essential_parts)}/{len(unique_files)} transformer parts")
-            print(f"     This provides basic functionality with reduced storage (~75% smaller)")
+            print(f"✅ Downloaded {len(essential_parts)}/{len(unique_files)} transformer parts")
+            print(f"     Complete model downloaded with full functionality")
             
         except Exception as e:
             print(f"❌ Transformer download issue: {e}")

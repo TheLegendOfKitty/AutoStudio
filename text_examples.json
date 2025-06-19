@@ -1,0 +1,47 @@
+{
+    "restaurant_sign": {
+        "turn 1": {
+            "size": [1024, 1024],
+            "caption": "masterpiece, best quality, 8k uhd, cozy Italian restaurant exterior at night with a vintage neon sign with 'Mama's Pizza' in glowing, neon-style, luminous text on a sign within the scene with neon glow, sign integrated naturally into the cozy Italian restaurant exterior at night",
+            "objects": [],
+            "background": "Italian restaurant at night, warm lighting, vintage architecture",
+            "negative": "blurry text, unreadable letters, distorted words"
+        }
+    },
+    "movie_poster": {
+        "turn 1": {
+            "size": [1024, 1024], 
+            "caption": "masterpiece, best quality, 8k uhd, sci-fi thriller poster design, dark blue and silver colors with 'GALAXY WARS' with smaller subtitle 'The Final Battle' in bold, impact-style, attention-grabbing font white large font centered in the image with subtle shadow, elegant styling",
+            "objects": [],
+            "background": "sci-fi space battle scene, dramatic lighting, cinematic composition",
+            "negative": "blurry text, unreadable letters, poor typography"
+        }
+    },
+    "tech_logo": {
+        "turn 1": {
+            "size": [1024, 1024],
+            "caption": "masterpiece, best quality, 8k uhd, professional logo design for technology company with 'TechFlow' in clean lines, minimalist, sans-serif typography white large font centered in the image, clean background, professional presentation",
+            "objects": [],
+            "background": "minimal clean background, professional design",
+            "negative": "cluttered design, poor typography, blurry text"
+        }
+    },
+    "book_cover": {
+        "turn 1": {
+            "size": [1024, 1024],
+            "caption": "masterpiece, best quality, 8k uhd, epic fantasy book cover, mystical atmosphere with 'The Dragon's Quest' with author name 'J.K. Fantasy' in bold, impact-style, attention-grabbing font white large font centered in the image with subtle shadow, elegant styling",
+            "objects": [],
+            "background": "mystical fantasy landscape, dragon silhouette, magical atmosphere",
+            "negative": "blurry text, unreadable letters, poor book design"
+        }
+    },
+    "street_graffiti": {
+        "turn 1": {
+            "size": [1024, 1024],
+            "caption": "masterpiece, best quality, 8k uhd, urban brick wall with 'FREEDOM' in street art, spray paint, urban graffiti style bright red huge font centered in the image with spray paint texture, street art style",
+            "objects": [],
+            "background": "urban brick wall, city environment, street art setting",
+            "negative": "clean walls, corporate style, blurry graffiti"
+        }
+    }
+}

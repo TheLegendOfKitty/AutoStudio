@@ -61,24 +61,45 @@ class AutoStudioDownloadManager:
         
         models = [
             {
-                "id": "flux-minimal",
-                "name": "Flux.1-schnell (Minimal)",
-                "size": "~3-4 GB",
-                "description": "Fast 4-step generation, essential components only",
+                "id": "flux-single",
+                "name": "Flux.1-schnell (Single File)",
+                "size": "~24 GB",
+                "description": "Complete model in one file - faster, cleaner",
                 "auth_required": True
+            },
+            {
+                "id": "flux-minimal",
+                "name": "Flux.1-schnell (Minimal Components)",
+                "size": "~3-4 GB",
+                "description": "Essential components only - reduced functionality",
+                "auth_required": True
+            },
+            {
+                "id": "sd15-single",
+                "name": "Stable Diffusion 1.5 (Single File)",
+                "size": "~4 GB", 
+                "description": "Complete SD 1.5 model in one file",
+                "auth_required": False
             },
             {
                 "id": "sd15-minimal", 
                 "name": "Stable Diffusion 1.5 (Minimal)",
                 "size": "~2-3 GB",
-                "description": "Classic SD model, minimal download",
+                "description": "Essential components only",
+                "auth_required": False
+            },
+            {
+                "id": "sdxl-single",
+                "name": "Stable Diffusion XL (Single File)",
+                "size": "~7 GB",
+                "description": "Complete SDXL model in one file",
                 "auth_required": False
             },
             {
                 "id": "sdxl-minimal",
                 "name": "Stable Diffusion XL (Minimal)", 
                 "size": "~5-6 GB",
-                "description": "High resolution generation",
+                "description": "Essential components only",
                 "auth_required": False
             }
         ]
@@ -95,13 +116,28 @@ class AutoStudioDownloadManager:
     def download_model(self, model_id: str) -> Optional[str]:
         """Download a specific model"""
         try:
-            if model_id == "flux-minimal":
+            # Import single file downloader
+            from download_single_file import SingleFileDownloader
+            single_downloader = SingleFileDownloader()
+            
+            if model_id == "flux-single":
+                if not self.authenticated:
+                    self.authenticate_if_needed()
+                return single_downloader.download_flux_single_file("schnell")
+                
+            elif model_id == "flux-minimal":
                 if not self.authenticated:
                     self.authenticate_if_needed()
                 return self.downloader.download_minimal_flux()
                 
+            elif model_id == "sd15-single":
+                return single_downloader.download_sd_single_file("sd15")
+                
             elif model_id == "sd15-minimal":
                 return self.downloader.download_stable_diffusion_15()
+                
+            elif model_id == "sdxl-single":
+                return single_downloader.download_sd_single_file("sdxl")
                 
             elif model_id == "sdxl-minimal":
                 return self.download_sdxl_minimal()
@@ -217,21 +253,40 @@ class AutoStudioDownloadManager:
         print(f"\n📖 Usage Instructions:")
         print("=" * 40)
         
-        if model_id == "flux-minimal":
-            print(f"Update run.py with:")
-            print(f"   base_model_path = '{model_path}'")
-            print(f"\nRun with:")
+        if model_id in ["flux-single", "flux-minimal"]:
+            print(f"📄 Model downloaded: {model_path}")
+            if model_id == "flux-single":
+                print(f"✅ Complete single-file model - full functionality")
+            else:
+                print(f"⚠️  Minimal components - some features may be limited")
+            print(f"\n🔧 Usage:")
             print(f"   python run.py --sd_version flux --device auto")
             
-        elif model_id == "sd15-minimal":
-            print(f"Run with:")
+        elif model_id in ["sd15-single", "sd15-minimal"]:
+            print(f"📄 Model downloaded: {model_path}")
+            if model_id == "sd15-single":
+                print(f"✅ Complete single-file model")
+            print(f"\n🔧 Usage:")
             print(f"   python run.py --sd_version 1.5 --device auto")
             
-        elif model_id == "sdxl-minimal":
-            print(f"Run with:")
+        elif model_id in ["sdxl-single", "sdxl-minimal"]:
+            print(f"📄 Model downloaded: {model_path}")
+            if model_id == "sdxl-single":
+                print(f"✅ Complete single-file model")
+            print(f"\n🔧 Usage:")
             print(f"   python run.py --sd_version xl --device auto")
         
-        print(f"\n💡 Tip: Use --device mps on Apple Silicon for GPU acceleration")
+        # Check if existing single file is already present
+        existing_single_file = Path("./flux1-schnell.safetensors")
+        if existing_single_file.exists() and "flux" in model_id:
+            print(f"\n💡 Found existing single file: {existing_single_file}")
+            print(f"   Size: {existing_single_file.stat().st_size / (1024**3):.1f} GB")
+            print(f"   You can use this instead by updating run.py")
+        
+        print(f"\n💡 Tips:")
+        print(f"   • Use --device mps on Apple Silicon for GPU acceleration") 
+        print(f"   • Single-file models load faster and are easier to manage")
+        print(f"   • Keep both minimal and single-file versions for different use cases")
     
     def batch_download(self, model_ids: List[str]):
         """Download multiple models in batch"""

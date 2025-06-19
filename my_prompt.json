@@ -1,0 +1,17 @@
+{
+    "simple_test": {
+        "turn 1": {
+            "size": [1024, 1024],
+            "caption": "A cat sitting on a chair in a cozy room",
+            "objects": [
+                [
+                    "cat, sitting on chair, fluffy",
+                    [300, 200, 400, 600],
+                    "1"
+                ]
+            ],
+            "background": "cozy living room",
+            "negative": "blurry, low quality"
+        }
+    }
+}
