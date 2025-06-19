@@ -982,8 +982,31 @@ class AUTOSTUDIOFLUX:
         # Configure scheduler
         self.configure_scheduler(scheduler)
         
-        # For Flux, simplified generation approach
-        main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
+        # Character consistency for Flux - build comprehensive prompt with character references
+        character_descriptions = []
+        character_refs = []
+        
+        # Process characters for consistency
+        for i, obj_id in enumerate(prompt_book['obj_ids']):
+            char_desc = prompt_book['gen_boxes'][i][0]  # Character description
+            character_descriptions.append(f"({char_desc})")
+            
+            # Check if we have a reference image for this character
+            if obj_id in character_database and character_database[obj_id] != character_database.get('0'):
+                character_refs.append(f"consistent with previous appearance")
+            else:
+                character_refs.append(f"new character introduction")
+        
+        # Build comprehensive prompt with character consistency cues
+        if character_descriptions:
+            character_prompt = ", ".join(character_descriptions)
+            consistency_cues = " ".join(character_refs)
+            main_prompt = f"{prompt_book['background']}, {character_prompt}, {consistency_cues}, {prompt_book['prompt']}"
+        else:
+            main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
+        
+        print(f"🎭 Character-aware prompt: {main_prompt[:100]}...")
+        print(f"📊 Processing {len(character_descriptions)} characters")
         
         # Handle MPS tensor allocation issues with sophisticated workaround
         if self.device == 'mps':
@@ -1090,6 +1113,35 @@ class AUTOSTUDIOFLUX:
                 generator=generator,
                 **kwargs,
             ).images
+
+        # Update character database with generated character crops for future consistency
+        if images and len(images) > 0:
+            generated_image = images[0]
+            
+            # Extract character crops based on bounding boxes
+            for i, obj_id in enumerate(prompt_book['obj_ids']):
+                try:
+                    # Get bounding box coordinates
+                    bbox = prompt_book['gen_boxes'][i][1]  # [x, y, w, h]
+                    x, y, w, h = bbox
+                    
+                    # Ensure coordinates are within image bounds
+                    img_width, img_height = generated_image.size
+                    x = max(0, min(x, img_width - 1))
+                    y = max(0, min(y, img_height - 1))
+                    w = max(1, min(w, img_width - x))
+                    h = max(1, min(h, img_height - y))
+                    
+                    # Crop character from generated image
+                    character_crop = generated_image.crop((x, y, x + w, y + h))
+                    
+                    # Store in character database for future consistency
+                    character_database[obj_id] = character_crop
+                    print(f"📸 Stored character {obj_id} crop ({w}x{h}) for future consistency")
+                    
+                except Exception as e:
+                    print(f"⚠️ Failed to extract character {obj_id}: {e}")
+                    continue
 
         return [images, character_database]
 
@@ -1559,8 +1611,31 @@ class AUTOSTUDIOFLUX:
         # Configure scheduler
         self.configure_scheduler(scheduler)
         
-        # For Flux, simplified generation approach
-        main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
+        # Character consistency for Flux - build comprehensive prompt with character references
+        character_descriptions = []
+        character_refs = []
+        
+        # Process characters for consistency
+        for i, obj_id in enumerate(prompt_book['obj_ids']):
+            char_desc = prompt_book['gen_boxes'][i][0]  # Character description
+            character_descriptions.append(f"({char_desc})")
+            
+            # Check if we have a reference image for this character
+            if obj_id in character_database and character_database[obj_id] != character_database.get('0'):
+                character_refs.append(f"consistent with previous appearance")
+            else:
+                character_refs.append(f"new character introduction")
+        
+        # Build comprehensive prompt with character consistency cues
+        if character_descriptions:
+            character_prompt = ", ".join(character_descriptions)
+            consistency_cues = " ".join(character_refs)
+            main_prompt = f"{prompt_book['background']}, {character_prompt}, {consistency_cues}, {prompt_book['prompt']}"
+        else:
+            main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
+        
+        print(f"🎭 Character-aware prompt: {main_prompt[:100]}...")
+        print(f"📊 Processing {len(character_descriptions)} characters")
         
         # Handle MPS tensor allocation issues with sophisticated workaround
         if self.device == 'mps':
@@ -1667,6 +1742,35 @@ class AUTOSTUDIOFLUX:
                 generator=generator,
                 **kwargs,
             ).images
+
+        # Update character database with generated character crops for future consistency
+        if images and len(images) > 0:
+            generated_image = images[0]
+            
+            # Extract character crops based on bounding boxes
+            for i, obj_id in enumerate(prompt_book['obj_ids']):
+                try:
+                    # Get bounding box coordinates
+                    bbox = prompt_book['gen_boxes'][i][1]  # [x, y, w, h]
+                    x, y, w, h = bbox
+                    
+                    # Ensure coordinates are within image bounds
+                    img_width, img_height = generated_image.size
+                    x = max(0, min(x, img_width - 1))
+                    y = max(0, min(y, img_height - 1))
+                    w = max(1, min(w, img_width - x))
+                    h = max(1, min(h, img_height - y))
+                    
+                    # Crop character from generated image
+                    character_crop = generated_image.crop((x, y, x + w, y + h))
+                    
+                    # Store in character database for future consistency
+                    character_database[obj_id] = character_crop
+                    print(f"📸 Stored character {obj_id} crop ({w}x{h}) for future consistency")
+                    
+                except Exception as e:
+                    print(f"⚠️ Failed to extract character {obj_id}: {e}")
+                    continue
 
         return [images, character_database]
 
