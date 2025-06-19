@@ -961,15 +961,40 @@ class AUTOSTUDIOFLUX:
         Enhanced generation with character visual guidance for Flux
         """
         try:
-            # Get text embeddings
-            prompt_embeds, pooled_prompt_embeds = self.pipe.encode_prompt(
-                prompt=prompt, 
-                prompt_2=None,
-                device=self.device,
-                num_images_per_prompt=1,
-                do_classifier_free_guidance=True,
-                max_sequence_length=max_sequence_length
-            )
+            # Get text embeddings - try different encode_prompt signatures for compatibility
+            try:
+                # Try the custom pipeline signature first
+                prompt_embeds, _, pooled_prompt_embeds, _ = self.pipe.encode_prompt(
+                    prompt=prompt, 
+                    prompt_2=None,
+                    device=self.device,
+                    num_images_per_prompt=1,
+                    do_classifier_free_guidance=True,
+                    max_sequence_length=max_sequence_length
+                )
+            except TypeError:
+                # Fallback to standard diffusers Flux pipeline signature
+                try:
+                    prompt_embeds, _, pooled_prompt_embeds, _ = self.pipe.encode_prompt(
+                        prompt=prompt,
+                        prompt_2=None,
+                        device=self.device,
+                        num_images_per_prompt=1,
+                        max_sequence_length=max_sequence_length
+                    )
+                except Exception:
+                    # Final fallback - just encode text embeddings manually
+                    prompt_embeds = self.pipe._encode_prompt_with_t5(
+                        prompt=prompt,
+                        device=self.device,
+                        num_images_per_prompt=1,
+                        max_sequence_length=max_sequence_length,
+                    )
+                    pooled_prompt_embeds = self.pipe._encode_prompt_with_clip(
+                        prompt=prompt,
+                        device=self.device,
+                        num_images_per_prompt=1,
+                    )
             
             # Integrate character embeddings into prompt embeddings
             if character_embeds and any(embed is not None for embed in character_embeds):
@@ -1735,15 +1760,40 @@ class AUTOSTUDIOFLUX:
         Enhanced generation with character visual guidance for Flux
         """
         try:
-            # Get text embeddings
-            prompt_embeds, pooled_prompt_embeds = self.pipe.encode_prompt(
-                prompt=prompt, 
-                prompt_2=None,
-                device=self.device,
-                num_images_per_prompt=1,
-                do_classifier_free_guidance=True,
-                max_sequence_length=max_sequence_length
-            )
+            # Get text embeddings - try different encode_prompt signatures for compatibility
+            try:
+                # Try the custom pipeline signature first
+                prompt_embeds, _, pooled_prompt_embeds, _ = self.pipe.encode_prompt(
+                    prompt=prompt, 
+                    prompt_2=None,
+                    device=self.device,
+                    num_images_per_prompt=1,
+                    do_classifier_free_guidance=True,
+                    max_sequence_length=max_sequence_length
+                )
+            except TypeError:
+                # Fallback to standard diffusers Flux pipeline signature
+                try:
+                    prompt_embeds, _, pooled_prompt_embeds, _ = self.pipe.encode_prompt(
+                        prompt=prompt,
+                        prompt_2=None,
+                        device=self.device,
+                        num_images_per_prompt=1,
+                        max_sequence_length=max_sequence_length
+                    )
+                except Exception:
+                    # Final fallback - just encode text embeddings manually
+                    prompt_embeds = self.pipe._encode_prompt_with_t5(
+                        prompt=prompt,
+                        device=self.device,
+                        num_images_per_prompt=1,
+                        max_sequence_length=max_sequence_length,
+                    )
+                    pooled_prompt_embeds = self.pipe._encode_prompt_with_clip(
+                        prompt=prompt,
+                        device=self.device,
+                        num_images_per_prompt=1,
+                    )
             
             # Integrate character embeddings into prompt embeddings
             if character_embeds and any(embed is not None for embed in character_embeds):
