@@ -954,6 +954,69 @@ class AUTOSTUDIOFLUX:
         except Exception as e:
             print(f"⚠️ Failed to configure scheduler '{scheduler_type}': {e}")
             print("Using default scheduler")
+    
+    def generate_with_character_guidance(self, prompt, character_embeds, character_weights, height, width, 
+                                       num_inference_steps, guidance_scale, generator, max_sequence_length, **kwargs):
+        """
+        Enhanced generation with character visual guidance for Flux
+        """
+        try:
+            # Get text embeddings
+            prompt_embeds, pooled_prompt_embeds = self.pipe.encode_prompt(
+                prompt=prompt, 
+                prompt_2=None,
+                device=self.device,
+                num_images_per_prompt=1,
+                do_classifier_free_guidance=True,
+                max_sequence_length=max_sequence_length
+            )
+            
+            # Integrate character embeddings into prompt embeddings
+            if character_embeds and any(embed is not None for embed in character_embeds):
+                print("🔮 Integrating character visual guidance into embeddings...")
+                
+                # Mix character embeddings with text embeddings
+                for i, (char_embed, weight) in enumerate(zip(character_embeds, character_weights)):
+                    if char_embed is not None and weight > 0:
+                        # Reshape character embedding to match text embedding dimensions
+                        char_embed_resized = char_embed.view(1, -1, char_embed.shape[-1])
+                        
+                        # Mix with text embeddings using weighted addition
+                        embed_scale = weight * 0.3  # Scale down for subtlety
+                        if char_embed_resized.shape[-1] == prompt_embeds.shape[-1]:
+                            # Add character guidance to the first few tokens
+                            mix_length = min(char_embed_resized.shape[1], prompt_embeds.shape[1] // 4)
+                            prompt_embeds[0, :mix_length] = (
+                                prompt_embeds[0, :mix_length] * (1 - embed_scale) + 
+                                char_embed_resized[0, :mix_length] * embed_scale
+                            )
+                            print(f"📝 Applied character {i+1} embedding with weight {weight:.2f}")
+            
+            # Generate with modified embeddings
+            return self.pipe(
+                prompt_embeds=prompt_embeds,
+                pooled_prompt_embeds=pooled_prompt_embeds,
+                height=height,
+                width=width,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=guidance_scale,
+                generator=generator,
+                **kwargs
+            ).images
+            
+        except Exception as e:
+            print(f"⚠️ Character guidance failed: {e}")
+            # Fallback to standard generation
+            return self.pipe(
+                prompt=prompt,
+                height=height,
+                width=width,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=guidance_scale,
+                generator=generator,
+                max_sequence_length=max_sequence_length,
+                **kwargs
+            ).images
 
     def generate(
         self,
@@ -982,33 +1045,51 @@ class AUTOSTUDIOFLUX:
         # Configure scheduler
         self.configure_scheduler(scheduler)
         
-        # Character consistency for Flux - build comprehensive prompt with character references
+        # Advanced Character Consistency for Flux using Visual Embeddings
         character_descriptions = []
-        character_refs = []
+        character_visual_embeds = []
+        character_weights = []
         
-        # Process characters for consistency
+        # Process characters for visual consistency
         for i, obj_id in enumerate(prompt_book['obj_ids']):
             char_desc = prompt_book['gen_boxes'][i][0]  # Character description
             character_descriptions.append(f"({char_desc})")
             
             # Check if we have a reference image for this character
             if obj_id in character_database and character_database[obj_id] != character_database.get('0'):
-                character_refs.append(f"consistent with previous appearance")
+                try:
+                    # Get visual embedding from character reference
+                    ref_image = character_database[obj_id]
+                    char_embed, _ = self.get_image_embeds(pil_image=ref_image)
+                    character_visual_embeds.append(char_embed)
+                    character_weights.append(0.8)  # Strong weight for existing characters
+                    print(f"🎨 Using visual reference for character {obj_id}")
+                except Exception as e:
+                    print(f"⚠️ Failed to encode character {obj_id} reference: {e}")
+                    character_visual_embeds.append(None)
+                    character_weights.append(0.0)
             else:
-                character_refs.append(f"new character introduction")
+                character_visual_embeds.append(None)
+                character_weights.append(0.0)
+                print(f"🆕 New character introduction: {obj_id}")
         
-        # Build comprehensive prompt with character consistency cues
+        # Build prompt with character descriptions
         if character_descriptions:
             character_prompt = ", ".join(character_descriptions)
-            consistency_cues = " ".join(character_refs)
             bg_prompt = prompt_book.get('bg_prompt', prompt_book.get('background', ''))
             scene_prompt = prompt_book.get('prompt', prompt_book.get('caption', ''))
-            main_prompt = f"{bg_prompt}, {character_prompt}, {consistency_cues}, {scene_prompt}"
+            main_prompt = f"{bg_prompt}, {character_prompt}, {scene_prompt}"
         else:
             main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
         
+        # Prepare visual guidance
+        visual_guidance_scale = 0.6  # Strength of visual character guidance
+        has_visual_refs = any(embed is not None for embed in character_visual_embeds)
+        
         print(f"🎭 Character-aware prompt: {main_prompt[:100]}...")
         print(f"📊 Processing {len(character_descriptions)} characters")
+        if has_visual_refs:
+            print(f"👁️ Using visual embeddings for {sum(1 for e in character_visual_embeds if e is not None)} characters")
         
         # Handle MPS tensor allocation issues with sophisticated workaround
         if self.device == 'mps':
@@ -1035,16 +1116,31 @@ class AUTOSTUDIOFLUX:
                         # Pre-allocate MPS memory
                         torch.mps.empty_cache()
                         
-                        images = self.pipe(
-                            prompt=main_prompt,
-                            height=height,
-                            width=width,
-                            num_inference_steps=num_inference_steps,
-                            guidance_scale=guidance_scale,
-                            generator=generator,
-                            max_sequence_length=max_sequence_length,
-                            **kwargs,
-                        ).images
+                        # Use character-guided generation if visual references available
+                        if has_visual_refs:
+                            images = self.generate_with_character_guidance(
+                                prompt=main_prompt,
+                                character_embeds=character_visual_embeds,
+                                character_weights=character_weights,
+                                height=height,
+                                width=width,
+                                num_inference_steps=num_inference_steps,
+                                guidance_scale=guidance_scale,
+                                generator=generator,
+                                max_sequence_length=max_sequence_length,
+                                **kwargs,
+                            )
+                        else:
+                            images = self.pipe(
+                                prompt=main_prompt,
+                                height=height,
+                                width=width,
+                                num_inference_steps=num_inference_steps,
+                                guidance_scale=guidance_scale,
+                                generator=generator,
+                                max_sequence_length=max_sequence_length,
+                                **kwargs,
+                            ).images
                         print("✅ MPS generation successful with CPU generator!")
                         break
                         
@@ -1069,16 +1165,31 @@ class AUTOSTUDIOFLUX:
                         del dummy_latents
                         torch.mps.empty_cache()
                         
-                        images = self.pipe(
-                            prompt=main_prompt,
-                            height=height,
-                            width=width,
-                            num_inference_steps=num_inference_steps,
-                            guidance_scale=guidance_scale,
-                            generator=generator,
-                            max_sequence_length=max_sequence_length,
-                            **kwargs,
-                        ).images
+                        # Use character-guided generation if visual references available
+                        if has_visual_refs:
+                            images = self.generate_with_character_guidance(
+                                prompt=main_prompt,
+                                character_embeds=character_visual_embeds,
+                                character_weights=character_weights,
+                                height=height,
+                                width=width,
+                                num_inference_steps=num_inference_steps,
+                                guidance_scale=guidance_scale,
+                                generator=generator,
+                                max_sequence_length=max_sequence_length,
+                                **kwargs,
+                            )
+                        else:
+                            images = self.pipe(
+                                prompt=main_prompt,
+                                height=height,
+                                width=width,
+                                num_inference_steps=num_inference_steps,
+                                guidance_scale=guidance_scale,
+                                generator=generator,
+                                max_sequence_length=max_sequence_length,
+                                **kwargs,
+                            ).images
                         print("✅ MPS generation successful with pre-allocation!")
                         break
                         
@@ -1094,6 +1205,49 @@ class AUTOSTUDIOFLUX:
                 generator = get_generator(seed, 'cpu')
                 self.pipe = self.pipe.to('cpu')
                 
+                # Use character-guided generation if visual references available
+                if has_visual_refs:
+                    images = self.generate_with_character_guidance(
+                        prompt=main_prompt,
+                        character_embeds=character_visual_embeds,
+                        character_weights=character_weights,
+                        height=height,
+                        width=width,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                        generator=generator,
+                        max_sequence_length=max_sequence_length,
+                        **kwargs,
+                    )
+                else:
+                    images = self.pipe(
+                        prompt=main_prompt,
+                        height=height,
+                        width=width,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                        generator=generator,
+                        max_sequence_length=max_sequence_length,
+                        **kwargs,
+                    ).images
+                print("Generation completed on CPU (fallback)")
+        else:
+            generator = get_generator(seed, self.device)
+            # Use character-guided generation if visual references available
+            if has_visual_refs:
+                images = self.generate_with_character_guidance(
+                    prompt=main_prompt,
+                    character_embeds=character_visual_embeds,
+                    character_weights=character_weights,
+                    height=height,
+                    width=width,
+                    num_inference_steps=num_inference_steps,
+                    guidance_scale=guidance_scale,
+                    generator=generator,
+                    max_sequence_length=max_sequence_length,
+                    **kwargs,
+                )
+            else:
                 images = self.pipe(
                     prompt=main_prompt,
                     height=height,
@@ -1101,20 +1255,9 @@ class AUTOSTUDIOFLUX:
                     num_inference_steps=num_inference_steps,
                     guidance_scale=guidance_scale,
                     generator=generator,
+                    max_sequence_length=max_sequence_length,
                     **kwargs,
                 ).images
-                print("Generation completed on CPU (fallback)")
-        else:
-            generator = get_generator(seed, self.device)
-            images = self.pipe(
-                prompt=main_prompt,
-                height=height,
-                width=width,
-                num_inference_steps=num_inference_steps,
-                guidance_scale=guidance_scale,
-                generator=generator,
-                **kwargs,
-            ).images
 
         # Update character database with generated character crops for future consistency
         if images and len(images) > 0:
@@ -1585,6 +1728,69 @@ class AUTOSTUDIOFLUX:
         except Exception as e:
             print(f"⚠️ Failed to configure scheduler '{scheduler_type}': {e}")
             print("Using default scheduler")
+    
+    def generate_with_character_guidance(self, prompt, character_embeds, character_weights, height, width, 
+                                       num_inference_steps, guidance_scale, generator, max_sequence_length, **kwargs):
+        """
+        Enhanced generation with character visual guidance for Flux
+        """
+        try:
+            # Get text embeddings
+            prompt_embeds, pooled_prompt_embeds = self.pipe.encode_prompt(
+                prompt=prompt, 
+                prompt_2=None,
+                device=self.device,
+                num_images_per_prompt=1,
+                do_classifier_free_guidance=True,
+                max_sequence_length=max_sequence_length
+            )
+            
+            # Integrate character embeddings into prompt embeddings
+            if character_embeds and any(embed is not None for embed in character_embeds):
+                print("🔮 Integrating character visual guidance into embeddings...")
+                
+                # Mix character embeddings with text embeddings
+                for i, (char_embed, weight) in enumerate(zip(character_embeds, character_weights)):
+                    if char_embed is not None and weight > 0:
+                        # Reshape character embedding to match text embedding dimensions
+                        char_embed_resized = char_embed.view(1, -1, char_embed.shape[-1])
+                        
+                        # Mix with text embeddings using weighted addition
+                        embed_scale = weight * 0.3  # Scale down for subtlety
+                        if char_embed_resized.shape[-1] == prompt_embeds.shape[-1]:
+                            # Add character guidance to the first few tokens
+                            mix_length = min(char_embed_resized.shape[1], prompt_embeds.shape[1] // 4)
+                            prompt_embeds[0, :mix_length] = (
+                                prompt_embeds[0, :mix_length] * (1 - embed_scale) + 
+                                char_embed_resized[0, :mix_length] * embed_scale
+                            )
+                            print(f"📝 Applied character {i+1} embedding with weight {weight:.2f}")
+            
+            # Generate with modified embeddings
+            return self.pipe(
+                prompt_embeds=prompt_embeds,
+                pooled_prompt_embeds=pooled_prompt_embeds,
+                height=height,
+                width=width,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=guidance_scale,
+                generator=generator,
+                **kwargs
+            ).images
+            
+        except Exception as e:
+            print(f"⚠️ Character guidance failed: {e}")
+            # Fallback to standard generation
+            return self.pipe(
+                prompt=prompt,
+                height=height,
+                width=width,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=guidance_scale,
+                generator=generator,
+                max_sequence_length=max_sequence_length,
+                **kwargs
+            ).images
 
     def generate(
         self,
@@ -1613,33 +1819,51 @@ class AUTOSTUDIOFLUX:
         # Configure scheduler
         self.configure_scheduler(scheduler)
         
-        # Character consistency for Flux - build comprehensive prompt with character references
+        # Advanced Character Consistency for Flux using Visual Embeddings
         character_descriptions = []
-        character_refs = []
+        character_visual_embeds = []
+        character_weights = []
         
-        # Process characters for consistency
+        # Process characters for visual consistency
         for i, obj_id in enumerate(prompt_book['obj_ids']):
             char_desc = prompt_book['gen_boxes'][i][0]  # Character description
             character_descriptions.append(f"({char_desc})")
             
             # Check if we have a reference image for this character
             if obj_id in character_database and character_database[obj_id] != character_database.get('0'):
-                character_refs.append(f"consistent with previous appearance")
+                try:
+                    # Get visual embedding from character reference
+                    ref_image = character_database[obj_id]
+                    char_embed, _ = self.get_image_embeds(pil_image=ref_image)
+                    character_visual_embeds.append(char_embed)
+                    character_weights.append(0.8)  # Strong weight for existing characters
+                    print(f"🎨 Using visual reference for character {obj_id}")
+                except Exception as e:
+                    print(f"⚠️ Failed to encode character {obj_id} reference: {e}")
+                    character_visual_embeds.append(None)
+                    character_weights.append(0.0)
             else:
-                character_refs.append(f"new character introduction")
+                character_visual_embeds.append(None)
+                character_weights.append(0.0)
+                print(f"🆕 New character introduction: {obj_id}")
         
-        # Build comprehensive prompt with character consistency cues
+        # Build prompt with character descriptions
         if character_descriptions:
             character_prompt = ", ".join(character_descriptions)
-            consistency_cues = " ".join(character_refs)
             bg_prompt = prompt_book.get('bg_prompt', prompt_book.get('background', ''))
             scene_prompt = prompt_book.get('prompt', prompt_book.get('caption', ''))
-            main_prompt = f"{bg_prompt}, {character_prompt}, {consistency_cues}, {scene_prompt}"
+            main_prompt = f"{bg_prompt}, {character_prompt}, {scene_prompt}"
         else:
             main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
         
+        # Prepare visual guidance
+        visual_guidance_scale = 0.6  # Strength of visual character guidance
+        has_visual_refs = any(embed is not None for embed in character_visual_embeds)
+        
         print(f"🎭 Character-aware prompt: {main_prompt[:100]}...")
         print(f"📊 Processing {len(character_descriptions)} characters")
+        if has_visual_refs:
+            print(f"👁️ Using visual embeddings for {sum(1 for e in character_visual_embeds if e is not None)} characters")
         
         # Handle MPS tensor allocation issues with sophisticated workaround
         if self.device == 'mps':
@@ -1666,16 +1890,31 @@ class AUTOSTUDIOFLUX:
                         # Pre-allocate MPS memory
                         torch.mps.empty_cache()
                         
-                        images = self.pipe(
-                            prompt=main_prompt,
-                            height=height,
-                            width=width,
-                            num_inference_steps=num_inference_steps,
-                            guidance_scale=guidance_scale,
-                            generator=generator,
-                            max_sequence_length=max_sequence_length,
-                            **kwargs,
-                        ).images
+                        # Use character-guided generation if visual references available
+                        if has_visual_refs:
+                            images = self.generate_with_character_guidance(
+                                prompt=main_prompt,
+                                character_embeds=character_visual_embeds,
+                                character_weights=character_weights,
+                                height=height,
+                                width=width,
+                                num_inference_steps=num_inference_steps,
+                                guidance_scale=guidance_scale,
+                                generator=generator,
+                                max_sequence_length=max_sequence_length,
+                                **kwargs,
+                            )
+                        else:
+                            images = self.pipe(
+                                prompt=main_prompt,
+                                height=height,
+                                width=width,
+                                num_inference_steps=num_inference_steps,
+                                guidance_scale=guidance_scale,
+                                generator=generator,
+                                max_sequence_length=max_sequence_length,
+                                **kwargs,
+                            ).images
                         print("✅ MPS generation successful with CPU generator!")
                         break
                         
@@ -1700,16 +1939,31 @@ class AUTOSTUDIOFLUX:
                         del dummy_latents
                         torch.mps.empty_cache()
                         
-                        images = self.pipe(
-                            prompt=main_prompt,
-                            height=height,
-                            width=width,
-                            num_inference_steps=num_inference_steps,
-                            guidance_scale=guidance_scale,
-                            generator=generator,
-                            max_sequence_length=max_sequence_length,
-                            **kwargs,
-                        ).images
+                        # Use character-guided generation if visual references available
+                        if has_visual_refs:
+                            images = self.generate_with_character_guidance(
+                                prompt=main_prompt,
+                                character_embeds=character_visual_embeds,
+                                character_weights=character_weights,
+                                height=height,
+                                width=width,
+                                num_inference_steps=num_inference_steps,
+                                guidance_scale=guidance_scale,
+                                generator=generator,
+                                max_sequence_length=max_sequence_length,
+                                **kwargs,
+                            )
+                        else:
+                            images = self.pipe(
+                                prompt=main_prompt,
+                                height=height,
+                                width=width,
+                                num_inference_steps=num_inference_steps,
+                                guidance_scale=guidance_scale,
+                                generator=generator,
+                                max_sequence_length=max_sequence_length,
+                                **kwargs,
+                            ).images
                         print("✅ MPS generation successful with pre-allocation!")
                         break
                         
@@ -1725,6 +1979,49 @@ class AUTOSTUDIOFLUX:
                 generator = get_generator(seed, 'cpu')
                 self.pipe = self.pipe.to('cpu')
                 
+                # Use character-guided generation if visual references available
+                if has_visual_refs:
+                    images = self.generate_with_character_guidance(
+                        prompt=main_prompt,
+                        character_embeds=character_visual_embeds,
+                        character_weights=character_weights,
+                        height=height,
+                        width=width,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                        generator=generator,
+                        max_sequence_length=max_sequence_length,
+                        **kwargs,
+                    )
+                else:
+                    images = self.pipe(
+                        prompt=main_prompt,
+                        height=height,
+                        width=width,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                        generator=generator,
+                        max_sequence_length=max_sequence_length,
+                        **kwargs,
+                    ).images
+                print("Generation completed on CPU (fallback)")
+        else:
+            generator = get_generator(seed, self.device)
+            # Use character-guided generation if visual references available
+            if has_visual_refs:
+                images = self.generate_with_character_guidance(
+                    prompt=main_prompt,
+                    character_embeds=character_visual_embeds,
+                    character_weights=character_weights,
+                    height=height,
+                    width=width,
+                    num_inference_steps=num_inference_steps,
+                    guidance_scale=guidance_scale,
+                    generator=generator,
+                    max_sequence_length=max_sequence_length,
+                    **kwargs,
+                )
+            else:
                 images = self.pipe(
                     prompt=main_prompt,
                     height=height,
@@ -1732,20 +2029,9 @@ class AUTOSTUDIOFLUX:
                     num_inference_steps=num_inference_steps,
                     guidance_scale=guidance_scale,
                     generator=generator,
+                    max_sequence_length=max_sequence_length,
                     **kwargs,
                 ).images
-                print("Generation completed on CPU (fallback)")
-        else:
-            generator = get_generator(seed, self.device)
-            images = self.pipe(
-                prompt=main_prompt,
-                height=height,
-                width=width,
-                num_inference_steps=num_inference_steps,
-                guidance_scale=guidance_scale,
-                generator=generator,
-                **kwargs,
-            ).images
 
         # Update character database with generated character crops for future consistency
         if images and len(images) > 0:
