@@ -83,8 +83,61 @@ parser.add_argument("--quantization", type=str, choices=['Q8_0', 'Q6_K', 'Q5_K_S
 parser.add_argument("--gguf_path", type=str, help="Path to pre-downloaded GGUF model file")
 parser.add_argument("--model_variant", default='schnell', choices=['schnell', 'dev'], help="Flux model variant for GGUF")
 
+# Image quality parameters
+parser.add_argument("--num_inference_steps", type=int, help="Number of denoising steps (default: 4 for Flux, 30 for SD)")
+parser.add_argument("--guidance_scale", type=float, help="Guidance scale for prompt adherence (default: 3.5 for Flux, 7.5 for SD)")
+parser.add_argument("--scheduler", type=str, choices=['euler', 'ddim', 'dpm', 'flow_match'], help="Scheduler type (default: flow_match for Flux, ddim for SD)")
+parser.add_argument("--refine_steps", type=int, help="Number of refinement steps (default: 4 for Flux, 20 for SD)")
+parser.add_argument("--max_sequence_length", type=int, default=512, help="Maximum sequence length for text encoder (Flux only)")
+parser.add_argument("--quality_preset", type=str, choices=['fast', 'balanced', 'high_quality'], help="Quality preset that overrides individual parameters")
+
 
 args = parser.parse_args()
+
+# Set quality presets
+if args.quality_preset:
+    if args.sd_version in ['flux', 'fluxplus']:
+        # Flux quality presets
+        if args.quality_preset == 'fast':
+            args.num_inference_steps = args.num_inference_steps or 2
+            args.guidance_scale = args.guidance_scale or 2.0
+            args.refine_steps = args.refine_steps or 2
+        elif args.quality_preset == 'balanced':
+            args.num_inference_steps = args.num_inference_steps or 4
+            args.guidance_scale = args.guidance_scale or 3.5
+            args.refine_steps = args.refine_steps or 4
+        elif args.quality_preset == 'high_quality':
+            args.num_inference_steps = args.num_inference_steps or 8
+            args.guidance_scale = args.guidance_scale or 5.0
+            args.refine_steps = args.refine_steps or 8
+    else:
+        # SD quality presets
+        if args.quality_preset == 'fast':
+            args.num_inference_steps = args.num_inference_steps or 15
+            args.guidance_scale = args.guidance_scale or 5.0
+            args.refine_steps = args.refine_steps or 10
+        elif args.quality_preset == 'balanced':
+            args.num_inference_steps = args.num_inference_steps or 30
+            args.guidance_scale = args.guidance_scale or 7.5
+            args.refine_steps = args.refine_steps or 20
+        elif args.quality_preset == 'high_quality':
+            args.num_inference_steps = args.num_inference_steps or 50
+            args.guidance_scale = args.guidance_scale or 10.0
+            args.refine_steps = args.refine_steps or 30
+
+# Set default values if not specified by user or presets
+if args.sd_version in ['flux', 'fluxplus']:
+    # Flux defaults
+    args.num_inference_steps = args.num_inference_steps or 4
+    args.guidance_scale = args.guidance_scale or 3.5
+    args.refine_steps = args.refine_steps or 4
+    args.scheduler = args.scheduler or 'flow_match'
+else:
+    # SD defaults
+    args.num_inference_steps = args.num_inference_steps or 30
+    args.guidance_scale = args.guidance_scale or 7.5
+    args.refine_steps = args.refine_steps or 20
+    args.scheduler = args.scheduler or 'ddim'
 
 # Initialize Accelerator for optimal device selection
 accelerator = Accelerator()
@@ -113,6 +166,18 @@ is_editing = args.is_editing # will be released soon
 is_CMIGBENCH = args.is_CMIGBENCH
 
 print('Welcome to the AutoStudio')
+
+# Display image quality settings
+print(f'\n🎨 Image Quality Settings:')
+print(f'   📊 Inference steps: {args.num_inference_steps}')
+print(f'   🎯 Guidance scale: {args.guidance_scale}')
+print(f'   🔧 Scheduler: {args.scheduler}')
+print(f'   ⚡ Refine steps: {args.refine_steps}')
+if args.sd_version in ['flux', 'fluxplus']:
+    print(f'   📝 Max sequence length: {args.max_sequence_length}')
+if args.quality_preset:
+    print(f'   🎛️ Quality preset: {args.quality_preset}')
+print()
 
 if args.sd_version == '1.5':
     ip_ckpt = "/IP-Adapter/models/ip-adapter_sd15.bin"
@@ -370,33 +435,40 @@ for dialogue in instructions:
 
             # Adjust parameters based on model version
             if args.sd_version in ['flux', 'fluxplus']:
-                # Flux-optimized parameters
+                # Flux parameters (using user-specified or preset values)
                 output = autostudio.generate(
                                             GROUNDING_DINO_MODEL,
                                             EFFICIENT_SAM_MODEL,
                                             character_database, 
                                             prompt_book, 
                                             do_latent_guidance,
-                                            refine_step=4,
-                                            num_samples=1, num_inference_steps=4, seed=ind_offset,
-                                            guidance_scale=3.5,
+                                            refine_step=args.refine_steps,
+                                            num_samples=1, 
+                                            num_inference_steps=args.num_inference_steps, 
+                                            seed=ind_offset,
+                                            guidance_scale=args.guidance_scale,
                                             img_scale=0.7,
                                             fuse_scale=[1.2, 0],
                                             height = prompt_book['size'][0],
                                             width = prompt_book['size'][1],
                                             is_editing = False,
                                             repeat_ind = repeat_ind,
+                                            scheduler=args.scheduler,
+                                            max_sequence_length=args.max_sequence_length,
                                             )
             else:
-                # SD parameters
+                # SD parameters (using user-specified or preset values)
                 output = autostudio.generate(
                                             GROUNDING_DINO_MODEL,
                                             EFFICIENT_SAM_MODEL,
                                             character_database, 
                                             prompt_book, 
                                             do_latent_guidance,
-                                            refine_step=20,
-                                            num_samples=1, num_inference_steps=30, seed=ind_offset,
+                                            refine_step=args.refine_steps,
+                                            num_samples=1, 
+                                            num_inference_steps=args.num_inference_steps, 
+                                            seed=ind_offset,
+                                            guidance_scale=args.guidance_scale,
                                             img_scale=0.7,
                                             fuse_scale=[1.2, 0],
                                             height = prompt_book['size'][0],

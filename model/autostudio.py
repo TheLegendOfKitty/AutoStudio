@@ -329,6 +329,8 @@ class AUTOSTUDIO:
         width = 1024,
         is_editing = False,
         repeat_ind = 0,
+        scheduler='flow_match',  # Scheduler type for Flux
+        max_sequence_length=512,  # Text encoder max length
         **kwargs,
     ):
         self.set_scale(img_scale)
@@ -582,6 +584,8 @@ class AUTOSTUDIOXL(AUTOSTUDIO):
         width = 1024,
         is_editing = False,
         repeat_ind = 0,
+        scheduler='flow_match',  # Scheduler type for Flux
+        max_sequence_length=512,  # Text encoder max length
         **kwargs,
     ):
 
@@ -913,6 +917,38 @@ class AUTOSTUDIOFLUX:
     def set_scale(self, scale):
         # For Flux, we'll need a different scaling approach
         pass
+    
+    def configure_scheduler(self, scheduler_type='flow_match'):
+        """Configure scheduler for Flux pipeline"""
+        try:
+            from diffusers.schedulers import (
+                FlowMatchEulerDiscreteScheduler,
+                DDIMScheduler,
+                EulerDiscreteScheduler,
+                DPMSolverMultistepScheduler
+            )
+            
+            if scheduler_type == 'flow_match':
+                # Default Flux scheduler
+                if hasattr(self.pipe, 'scheduler') and isinstance(self.pipe.scheduler, FlowMatchEulerDiscreteScheduler):
+                    return  # Already using the right scheduler
+                scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler_type == 'euler':
+                scheduler = EulerDiscreteScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler_type == 'ddim':
+                scheduler = DDIMScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler_type == 'dpm':
+                scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
+            else:
+                print(f"⚠️ Unknown scheduler '{scheduler_type}', using default flow_match")
+                return
+                
+            self.pipe.scheduler = scheduler
+            print(f"✅ Configured scheduler: {scheduler_type}")
+            
+        except Exception as e:
+            print(f"⚠️ Failed to configure scheduler '{scheduler_type}': {e}")
+            print("Using default scheduler")
 
     def generate(
         self,
@@ -933,8 +969,13 @@ class AUTOSTUDIOFLUX:
         width=1024,
         is_editing=False,
         repeat_ind=0,
+        scheduler='flow_match',  # Scheduler type for Flux
+        max_sequence_length=512,  # Text encoder max length
         **kwargs,
     ):
+        
+        # Configure scheduler
+        self.configure_scheduler(scheduler)
         
         # For Flux, simplified generation approach
         main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
@@ -971,6 +1012,7 @@ class AUTOSTUDIOFLUX:
                             num_inference_steps=num_inference_steps,
                             guidance_scale=guidance_scale,
                             generator=generator,
+                            max_sequence_length=max_sequence_length,
                             **kwargs,
                         ).images
                         print("✅ MPS generation successful with CPU generator!")
@@ -1004,6 +1046,7 @@ class AUTOSTUDIOFLUX:
                             num_inference_steps=num_inference_steps,
                             guidance_scale=guidance_scale,
                             generator=generator,
+                            max_sequence_length=max_sequence_length,
                             **kwargs,
                         ).images
                         print("✅ MPS generation successful with pre-allocation!")
@@ -1121,6 +1164,8 @@ class AUTOSTUDIOXLPlus(AUTOSTUDIO):
         width = 1024,
         is_editing = False,
         repeat_ind = 0,
+        scheduler='flow_match',  # Scheduler type for Flux
+        max_sequence_length=512,  # Text encoder max length
         **kwargs,
     ):
 
@@ -1449,6 +1494,38 @@ class AUTOSTUDIOFLUX:
     def set_scale(self, scale):
         # For Flux, we'll need a different scaling approach
         pass
+    
+    def configure_scheduler(self, scheduler_type='flow_match'):
+        """Configure scheduler for Flux pipeline"""
+        try:
+            from diffusers.schedulers import (
+                FlowMatchEulerDiscreteScheduler,
+                DDIMScheduler,
+                EulerDiscreteScheduler,
+                DPMSolverMultistepScheduler
+            )
+            
+            if scheduler_type == 'flow_match':
+                # Default Flux scheduler
+                if hasattr(self.pipe, 'scheduler') and isinstance(self.pipe.scheduler, FlowMatchEulerDiscreteScheduler):
+                    return  # Already using the right scheduler
+                scheduler = FlowMatchEulerDiscreteScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler_type == 'euler':
+                scheduler = EulerDiscreteScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler_type == 'ddim':
+                scheduler = DDIMScheduler.from_config(self.pipe.scheduler.config)
+            elif scheduler_type == 'dpm':
+                scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
+            else:
+                print(f"⚠️ Unknown scheduler '{scheduler_type}', using default flow_match")
+                return
+                
+            self.pipe.scheduler = scheduler
+            print(f"✅ Configured scheduler: {scheduler_type}")
+            
+        except Exception as e:
+            print(f"⚠️ Failed to configure scheduler '{scheduler_type}': {e}")
+            print("Using default scheduler")
 
     def generate(
         self,
@@ -1469,8 +1546,13 @@ class AUTOSTUDIOFLUX:
         width=1024,
         is_editing=False,
         repeat_ind=0,
+        scheduler='flow_match',  # Scheduler type for Flux
+        max_sequence_length=512,  # Text encoder max length
         **kwargs,
     ):
+        
+        # Configure scheduler
+        self.configure_scheduler(scheduler)
         
         # For Flux, simplified generation approach
         main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
@@ -1507,6 +1589,7 @@ class AUTOSTUDIOFLUX:
                             num_inference_steps=num_inference_steps,
                             guidance_scale=guidance_scale,
                             generator=generator,
+                            max_sequence_length=max_sequence_length,
                             **kwargs,
                         ).images
                         print("✅ MPS generation successful with CPU generator!")
@@ -1540,6 +1623,7 @@ class AUTOSTUDIOFLUX:
                             num_inference_steps=num_inference_steps,
                             guidance_scale=guidance_scale,
                             generator=generator,
+                            max_sequence_length=max_sequence_length,
                             **kwargs,
                         ).images
                         print("✅ MPS generation successful with pre-allocation!")
