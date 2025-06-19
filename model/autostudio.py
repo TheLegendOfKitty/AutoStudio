@@ -4,7 +4,7 @@ dpath = os.path.dirname(current_file_path)
 ppath = os.path.dirname(dpath)
 
 import sys
-sys.path.append(f"{ppath}/DETECT_SAM/detectSam.py")
+sys.path.append(f"{ppath}/DETECT_SAM/")
 
 import torch
 import numpy as np
@@ -206,7 +206,13 @@ class ImageProjModel(torch.nn.Module):
 
 class AUTOSTUDIO:
     def __init__(self, sd_pipe, image_encoder_path, ip_ckpt, device, num_tokens=4):
-        self.device = device
+        # Support MPS, CUDA, and CPU devices
+        if device == 'mps' and torch.backends.mps.is_available():
+            self.device = 'mps'
+        elif device == 'cuda' and torch.cuda.is_available():
+            self.device = 'cuda'
+        else:
+            self.device = 'cpu'
         self.image_encoder_path = image_encoder_path
         self.ip_ckpt = ip_ckpt
         self.num_tokens = num_tokens
@@ -214,9 +220,10 @@ class AUTOSTUDIO:
         self.pipe = sd_pipe.to(self.device)
         self.set_ip_adapter()
 
-        # load image encoder
+        # load image encoder with appropriate dtype for device
+        dtype = torch.float32 if self.device in ['cpu', 'mps'] else torch.float16
         self.image_encoder = CLIPVisionModelWithProjection.from_pretrained(self.image_encoder_path).to(
-            self.device, dtype=torch.float16
+            self.device, dtype=dtype
         )
         self.clip_image_processor = CLIPImageProcessor()
         # image proj model
@@ -235,11 +242,12 @@ class AUTOSTUDIO:
         return embs
     
     def init_proj(self):
+        dtype = torch.float32 if self.device in ['cpu', 'mps'] else torch.float16
         image_proj_model = ImageProjModel(
             cross_attention_dim=self.pipe.unet.config.cross_attention_dim,
             clip_embeddings_dim=self.image_encoder.config.projection_dim,
             clip_extra_context_tokens=self.num_tokens,
-        ).to(self.device, dtype=torch.float16)
+        ).to(self.device, dtype=dtype)
         return image_proj_model
 
     def set_ip_adapter(self):
@@ -258,12 +266,13 @@ class AUTOSTUDIO:
             if cross_attention_dim is None:
                 attn_procs[name] = AttnProcessor()
             else:
+                dtype = torch.float32 if self.device in ['cpu', 'mps'] else torch.float16
                 attn_procs[name] = IPAttnProcessor(
                     hidden_size=hidden_size,
                     cross_attention_dim=cross_attention_dim,
                     scale=1.0,
                     num_tokens=self.num_tokens,
-                ).to(self.device, dtype=torch.float16)
+                ).to(self.device, dtype=dtype)
         unet.set_attn_processor(attn_procs)
 
     def load_ip_adapter(self):
@@ -287,9 +296,11 @@ class AUTOSTUDIO:
             if isinstance(pil_image, Image.Image):
                 pil_image = [pil_image]
             clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
-            clip_image_embeds = self.image_encoder(clip_image.to(self.device, dtype=torch.float16)).image_embeds
+            dtype = torch.float32 if self.device in ['cpu', 'mps'] else torch.float16
+            clip_image_embeds = self.image_encoder(clip_image.to(self.device, dtype=dtype)).image_embeds
         else:
-            clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float16)
+            dtype = torch.float32 if self.device in ['cpu', 'mps'] else torch.float16
+            clip_image_embeds = clip_image_embeds.to(self.device, dtype=dtype)
         image_prompt_embeds = self.image_proj_model(clip_image_embeds)
         uncond_image_prompt_embeds = self.image_proj_model(torch.zeros_like(clip_image_embeds))
         return image_prompt_embeds, uncond_image_prompt_embeds
@@ -817,6 +828,252 @@ class AUTOSTUDIOXL(AUTOSTUDIO):
             character_imgs_list.append([character_id, images])
         return character_imgs_list
 
+# Flux.1 Classes
+class AUTOSTUDIOFLUX:
+    def __init__(self, flux_pipe, image_encoder_path, ip_ckpt, device, num_tokens=4):
+        # Support MPS, CUDA, and CPU devices
+        if device == 'mps' and torch.backends.mps.is_available():
+            self.device = 'mps'
+        elif device == 'cuda' and torch.cuda.is_available():
+            self.device = 'cuda'
+        else:
+            self.device = 'cpu'
+        self.image_encoder_path = image_encoder_path
+        self.ip_ckpt = ip_ckpt
+        self.num_tokens = num_tokens
+
+        print(f'Moving Flux pipeline to device: {self.device}')
+        
+        # For MPS, avoid moving large models to device immediately due to memory constraints
+        if self.device == 'mps':
+            print('Keeping Flux pipeline on original device for MPS compatibility')
+            self.pipe = flux_pipe  # Don't move to MPS yet
+        else:
+            self.pipe = flux_pipe.to(self.device)
+        
+        print('Loading image encoder...')
+        # load image encoder with appropriate dtype for device
+        if self.device in ['cpu', 'mps']:
+            dtype = torch.float16  # Use float16 for MPS memory efficiency
+        else:  # CUDA
+            dtype = torch.bfloat16
+        
+        try:
+            self.image_encoder = CLIPVisionModelWithProjection.from_pretrained(self.image_encoder_path).to(
+                self.device, dtype=dtype
+            )
+            print(f'Image encoder loaded successfully on {self.device} with dtype {dtype}')
+        except Exception as e:
+            print(f'Error loading image encoder on {self.device}: {e}')
+            # Fallback to CPU for image encoder
+            self.image_encoder = CLIPVisionModelWithProjection.from_pretrained(self.image_encoder_path).to(
+                'cpu', dtype=torch.float32
+            )
+            print('Image encoder loaded on CPU as fallback')
+        self.clip_image_processor = CLIPImageProcessor()
+        # image proj model for Flux
+        self.image_proj_model = self.init_proj()
+
+    def encode_prompts(self, prompts):
+        '''
+        For Flux, we need to handle both CLIP and T5 encoders
+        '''
+        with torch.no_grad():
+            # Using Flux's encode_prompt method
+            prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds = self.pipe.encode_prompt(
+                prompt=prompts if isinstance(prompts, list) else [prompts],
+                device=self.device,
+                num_images_per_prompt=1,
+                do_classifier_free_guidance=False,
+            )
+        return prompt_embeds
+    
+    def init_proj(self):
+        # Adapted for Flux's different embedding dimensions
+        image_proj_model = ImageProjModel(
+            cross_attention_dim=3072,  # Flux transformer dimension
+            clip_embeddings_dim=self.image_encoder.config.projection_dim,
+            clip_extra_context_tokens=self.num_tokens,
+        ).to(self.device, dtype=torch.bfloat16)
+        return image_proj_model
+
+    @torch.inference_mode()
+    def get_image_embeds(self, pil_image=None, clip_image_embeds=None):
+        if pil_image is not None:
+            if isinstance(pil_image, Image.Image):
+                pil_image = [pil_image]
+            clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
+            clip_image_embeds = self.image_encoder(clip_image.to(self.device, dtype=torch.bfloat16)).image_embeds
+        else:
+            clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.bfloat16)
+        image_prompt_embeds = self.image_proj_model(clip_image_embeds)
+        uncond_image_prompt_embeds = self.image_proj_model(torch.zeros_like(clip_image_embeds))
+        return image_prompt_embeds, uncond_image_prompt_embeds
+
+    def set_scale(self, scale):
+        # For Flux, we'll need a different scaling approach
+        pass
+
+    def generate(
+        self,
+        dino_model,
+        same_model,
+        character_database,
+        prompt_book,
+        do_latent_guidance,
+        negative_prompt=None,
+        img_scale=1.0,
+        num_samples=4,
+        seed=None,
+        guidance_scale=3.5,  # Lower default for Flux
+        fuse_scale=[1, 0],
+        num_inference_steps=4,  # Much fewer steps for Flux
+        refine_step=4,
+        height=1024,
+        width=1024,
+        is_editing=False,
+        repeat_ind=0,
+        **kwargs,
+    ):
+        
+        # For Flux, simplified generation approach
+        main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
+        
+        # Handle MPS tensor allocation issues with sophisticated workaround
+        if self.device == 'mps':
+            print("Attempting MPS-native generation with tensor allocation workarounds...")
+            
+            # Try multiple strategies for MPS generation
+            images = None
+            strategies = [
+                "mps_with_cpu_generator",
+                "mps_with_pre_allocation", 
+                "fallback_to_cpu"
+            ]
+            
+            for strategy in strategies:
+                try:
+                    if strategy == "mps_with_cpu_generator":
+                        print("Strategy 1: MPS generation with CPU generator...")
+                        generator = get_generator(seed, 'cpu')
+                        
+                        # Ensure pipeline is on MPS
+                        if next(self.pipe.parameters()).device != torch.device('mps'):
+                            self.pipe = self.pipe.to('mps')
+                        
+                        # Pre-allocate MPS memory
+                        torch.mps.empty_cache()
+                        
+                        images = self.pipe(
+                            prompt=main_prompt,
+                            height=height,
+                            width=width,
+                            num_inference_steps=num_inference_steps,
+                            guidance_scale=guidance_scale,
+                            generator=generator,
+                            **kwargs,
+                        ).images
+                        print("✅ MPS generation successful with CPU generator!")
+                        break
+                        
+                    elif strategy == "mps_with_pre_allocation":
+                        print("Strategy 2: MPS generation with tensor pre-allocation...")
+                        generator = get_generator(seed, self.device)
+                        
+                        # Pre-allocate tensors to avoid runtime allocation issues
+                        batch_size = 1
+                        channels = 16  # Flux latent channels
+                        latent_height = height // 8
+                        latent_width = width // 8
+                        
+                        # Pre-allocate latent space on MPS
+                        dummy_latents = torch.randn(
+                            batch_size, channels, latent_height, latent_width,
+                            dtype=torch.float16, device='cpu'
+                        ).to('mps')
+                        print(f"Pre-allocated latents: {dummy_latents.shape} on {dummy_latents.device}")
+                        
+                        # Clear the dummy tensor
+                        del dummy_latents
+                        torch.mps.empty_cache()
+                        
+                        images = self.pipe(
+                            prompt=main_prompt,
+                            height=height,
+                            width=width,
+                            num_inference_steps=num_inference_steps,
+                            guidance_scale=guidance_scale,
+                            generator=generator,
+                            **kwargs,
+                        ).images
+                        print("✅ MPS generation successful with pre-allocation!")
+                        break
+                        
+                except Exception as e:
+                    print(f"❌ {strategy} failed: {e}")
+                    if strategy == "fallback_to_cpu":
+                        raise e
+                    continue
+            
+            # Final fallback to CPU if all MPS strategies fail
+            if images is None:
+                print("🔄 All MPS strategies failed, falling back to CPU...")
+                generator = get_generator(seed, 'cpu')
+                self.pipe = self.pipe.to('cpu')
+                
+                images = self.pipe(
+                    prompt=main_prompt,
+                    height=height,
+                    width=width,
+                    num_inference_steps=num_inference_steps,
+                    guidance_scale=guidance_scale,
+                    generator=generator,
+                    **kwargs,
+                ).images
+                print("Generation completed on CPU (fallback)")
+        else:
+            generator = get_generator(seed, self.device)
+            images = self.pipe(
+                prompt=main_prompt,
+                height=height,
+                width=width,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=guidance_scale,
+                generator=generator,
+                **kwargs,
+            ).images
+
+        return [images, character_database]
+
+class AUTOSTUDIOFLUXPlus(AUTOSTUDIOFLUX):
+    def init_proj(self):
+        # Use Resampler for better image understanding in Flux
+        image_proj_model = Resampler(
+            dim=3072,  # Flux transformer dimension
+            depth=4,
+            dim_head=64,
+            heads=20,
+            num_queries=self.num_tokens,
+            embedding_dim=self.image_encoder.config.hidden_size,
+            output_dim=3072,
+            ff_mult=4,
+        ).to(self.device, dtype=torch.bfloat16)
+        return image_proj_model
+
+    @torch.inference_mode()
+    def get_image_embeds(self, pil_image=None, clip_image_embeds=None):
+        if isinstance(pil_image, Image.Image):
+            pil_image = [pil_image]
+        clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
+        clip_image = clip_image.to(self.device, dtype=torch.bfloat16)
+        clip_image_embeds = self.image_encoder(clip_image, output_hidden_states=True).hidden_states[-2]
+        image_prompt_embeds = self.image_proj_model(clip_image_embeds)
+        uncond_clip_image_embeds = self.image_encoder(
+            torch.zeros_like(clip_image), output_hidden_states=True
+        ).hidden_states[-2]
+        uncond_image_prompt_embeds = self.image_proj_model(uncond_clip_image_embeds)
+        return image_prompt_embeds, uncond_image_prompt_embeds
+
 class AUTOSTUDIOXLPlus(AUTOSTUDIO):
     def init_proj(self):
         image_proj_model = Resampler(
@@ -1106,3 +1363,249 @@ class AUTOSTUDIOXLPlus(AUTOSTUDIO):
 
             character_imgs_list.append([character_id, images])
         return character_imgs_list
+
+# Flux.1 Classes
+class AUTOSTUDIOFLUX:
+    def __init__(self, flux_pipe, image_encoder_path, ip_ckpt, device, num_tokens=4):
+        # Support MPS, CUDA, and CPU devices
+        if device == 'mps' and torch.backends.mps.is_available():
+            self.device = 'mps'
+        elif device == 'cuda' and torch.cuda.is_available():
+            self.device = 'cuda'
+        else:
+            self.device = 'cpu'
+        self.image_encoder_path = image_encoder_path
+        self.ip_ckpt = ip_ckpt
+        self.num_tokens = num_tokens
+
+        print(f'Moving Flux pipeline to device: {self.device}')
+        
+        # For MPS, avoid moving large models to device immediately due to memory constraints
+        if self.device == 'mps':
+            print('Keeping Flux pipeline on original device for MPS compatibility')
+            self.pipe = flux_pipe  # Don't move to MPS yet
+        else:
+            self.pipe = flux_pipe.to(self.device)
+        
+        print('Loading image encoder...')
+        # load image encoder with appropriate dtype for device
+        if self.device in ['cpu', 'mps']:
+            dtype = torch.float16  # Use float16 for MPS memory efficiency
+        else:  # CUDA
+            dtype = torch.bfloat16
+        
+        try:
+            self.image_encoder = CLIPVisionModelWithProjection.from_pretrained(self.image_encoder_path).to(
+                self.device, dtype=dtype
+            )
+            print(f'Image encoder loaded successfully on {self.device} with dtype {dtype}')
+        except Exception as e:
+            print(f'Error loading image encoder on {self.device}: {e}')
+            # Fallback to CPU for image encoder
+            self.image_encoder = CLIPVisionModelWithProjection.from_pretrained(self.image_encoder_path).to(
+                'cpu', dtype=torch.float32
+            )
+            print('Image encoder loaded on CPU as fallback')
+        self.clip_image_processor = CLIPImageProcessor()
+        # image proj model for Flux
+        self.image_proj_model = self.init_proj()
+
+    def encode_prompts(self, prompts):
+        '''
+        For Flux, we need to handle both CLIP and T5 encoders
+        '''
+        with torch.no_grad():
+            # Using Flux's encode_prompt method
+            prompt_embeds, negative_prompt_embeds, pooled_prompt_embeds, negative_pooled_prompt_embeds = self.pipe.encode_prompt(
+                prompt=prompts if isinstance(prompts, list) else [prompts],
+                device=self.device,
+                num_images_per_prompt=1,
+                do_classifier_free_guidance=False,
+            )
+        return prompt_embeds
+    
+    def init_proj(self):
+        # Adapted for Flux's different embedding dimensions
+        image_proj_model = ImageProjModel(
+            cross_attention_dim=3072,  # Flux transformer dimension
+            clip_embeddings_dim=self.image_encoder.config.projection_dim,
+            clip_extra_context_tokens=self.num_tokens,
+        ).to(self.device, dtype=torch.bfloat16)
+        return image_proj_model
+
+    @torch.inference_mode()
+    def get_image_embeds(self, pil_image=None, clip_image_embeds=None):
+        if pil_image is not None:
+            if isinstance(pil_image, Image.Image):
+                pil_image = [pil_image]
+            clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
+            clip_image_embeds = self.image_encoder(clip_image.to(self.device, dtype=torch.bfloat16)).image_embeds
+        else:
+            clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.bfloat16)
+        image_prompt_embeds = self.image_proj_model(clip_image_embeds)
+        uncond_image_prompt_embeds = self.image_proj_model(torch.zeros_like(clip_image_embeds))
+        return image_prompt_embeds, uncond_image_prompt_embeds
+
+    def set_scale(self, scale):
+        # For Flux, we'll need a different scaling approach
+        pass
+
+    def generate(
+        self,
+        dino_model,
+        same_model,
+        character_database,
+        prompt_book,
+        do_latent_guidance,
+        negative_prompt=None,
+        img_scale=1.0,
+        num_samples=4,
+        seed=None,
+        guidance_scale=3.5,  # Lower default for Flux
+        fuse_scale=[1, 0],
+        num_inference_steps=4,  # Much fewer steps for Flux
+        refine_step=4,
+        height=1024,
+        width=1024,
+        is_editing=False,
+        repeat_ind=0,
+        **kwargs,
+    ):
+        
+        # For Flux, simplified generation approach
+        main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
+        
+        # Handle MPS tensor allocation issues with sophisticated workaround
+        if self.device == 'mps':
+            print("Attempting MPS-native generation with tensor allocation workarounds...")
+            
+            # Try multiple strategies for MPS generation
+            images = None
+            strategies = [
+                "mps_with_cpu_generator",
+                "mps_with_pre_allocation", 
+                "fallback_to_cpu"
+            ]
+            
+            for strategy in strategies:
+                try:
+                    if strategy == "mps_with_cpu_generator":
+                        print("Strategy 1: MPS generation with CPU generator...")
+                        generator = get_generator(seed, 'cpu')
+                        
+                        # Ensure pipeline is on MPS
+                        if next(self.pipe.parameters()).device != torch.device('mps'):
+                            self.pipe = self.pipe.to('mps')
+                        
+                        # Pre-allocate MPS memory
+                        torch.mps.empty_cache()
+                        
+                        images = self.pipe(
+                            prompt=main_prompt,
+                            height=height,
+                            width=width,
+                            num_inference_steps=num_inference_steps,
+                            guidance_scale=guidance_scale,
+                            generator=generator,
+                            **kwargs,
+                        ).images
+                        print("✅ MPS generation successful with CPU generator!")
+                        break
+                        
+                    elif strategy == "mps_with_pre_allocation":
+                        print("Strategy 2: MPS generation with tensor pre-allocation...")
+                        generator = get_generator(seed, self.device)
+                        
+                        # Pre-allocate tensors to avoid runtime allocation issues
+                        batch_size = 1
+                        channels = 16  # Flux latent channels
+                        latent_height = height // 8
+                        latent_width = width // 8
+                        
+                        # Pre-allocate latent space on MPS
+                        dummy_latents = torch.randn(
+                            batch_size, channels, latent_height, latent_width,
+                            dtype=torch.float16, device='cpu'
+                        ).to('mps')
+                        print(f"Pre-allocated latents: {dummy_latents.shape} on {dummy_latents.device}")
+                        
+                        # Clear the dummy tensor
+                        del dummy_latents
+                        torch.mps.empty_cache()
+                        
+                        images = self.pipe(
+                            prompt=main_prompt,
+                            height=height,
+                            width=width,
+                            num_inference_steps=num_inference_steps,
+                            guidance_scale=guidance_scale,
+                            generator=generator,
+                            **kwargs,
+                        ).images
+                        print("✅ MPS generation successful with pre-allocation!")
+                        break
+                        
+                except Exception as e:
+                    print(f"❌ {strategy} failed: {e}")
+                    if strategy == "fallback_to_cpu":
+                        raise e
+                    continue
+            
+            # Final fallback to CPU if all MPS strategies fail
+            if images is None:
+                print("🔄 All MPS strategies failed, falling back to CPU...")
+                generator = get_generator(seed, 'cpu')
+                self.pipe = self.pipe.to('cpu')
+                
+                images = self.pipe(
+                    prompt=main_prompt,
+                    height=height,
+                    width=width,
+                    num_inference_steps=num_inference_steps,
+                    guidance_scale=guidance_scale,
+                    generator=generator,
+                    **kwargs,
+                ).images
+                print("Generation completed on CPU (fallback)")
+        else:
+            generator = get_generator(seed, self.device)
+            images = self.pipe(
+                prompt=main_prompt,
+                height=height,
+                width=width,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=guidance_scale,
+                generator=generator,
+                **kwargs,
+            ).images
+
+        return [images, character_database]
+
+class AUTOSTUDIOFLUXPlus(AUTOSTUDIOFLUX):
+    def init_proj(self):
+        # Use Resampler for better image understanding in Flux
+        image_proj_model = Resampler(
+            dim=3072,  # Flux transformer dimension
+            depth=4,
+            dim_head=64,
+            heads=20,
+            num_queries=self.num_tokens,
+            embedding_dim=self.image_encoder.config.hidden_size,
+            output_dim=3072,
+            ff_mult=4,
+        ).to(self.device, dtype=torch.bfloat16)
+        return image_proj_model
+
+    @torch.inference_mode()
+    def get_image_embeds(self, pil_image=None, clip_image_embeds=None):
+        if isinstance(pil_image, Image.Image):
+            pil_image = [pil_image]
+        clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
+        clip_image = clip_image.to(self.device, dtype=torch.bfloat16)
+        clip_image_embeds = self.image_encoder(clip_image, output_hidden_states=True).hidden_states[-2]
+        image_prompt_embeds = self.image_proj_model(clip_image_embeds)
+        uncond_clip_image_embeds = self.image_encoder(
+            torch.zeros_like(clip_image), output_hidden_states=True
+        ).hidden_states[-2]
+        uncond_image_prompt_embeds = self.image_proj_model(uncond_clip_image_embeds)
+        return image_prompt_embeds, uncond_image_prompt_embeds

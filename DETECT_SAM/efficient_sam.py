@@ -6,7 +6,7 @@ from torchvision.transforms import ToTensor
 current_file_path = os.path.abspath(__file__)
 dpath = os.path.dirname(current_file_path)
 GPU_EFFICIENT_SAM_CHECKPOINT = f"{dpath}/pretrain/efficient_sam_s_gpu.jit"
-CPU_EFFICIENT_SAM_CHECKPOINT = "efficient_sam_s_cpu.jit"
+CPU_EFFICIENT_SAM_CHECKPOINT = f"{dpath}/pretrain/efficient_sam_s_cpu.jit"
 
 
 def load(device: torch.device) -> torch.jit.ScriptModule:

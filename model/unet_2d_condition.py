@@ -29,18 +29,34 @@ from diffusers.models.attention_processor import (
     AttnAddedKVProcessor,
     AttnProcessor,
 )
-from diffusers.models.embeddings import (
-    GaussianFourierProjection,
-    ImageHintTimeEmbedding,
-    ImageProjection,
-    ImageTimeEmbedding,
-    PositionNet,
-    TextImageProjection,
-    TextImageTimeEmbedding,
-    TextTimeEmbedding,
-    TimestepEmbedding,
-    Timesteps,
-)
+try:
+    from diffusers.models.embeddings import (
+        GaussianFourierProjection,
+        ImageHintTimeEmbedding,
+        ImageProjection,
+        ImageTimeEmbedding,
+        PositionNet,
+        TextImageProjection,
+        TextImageTimeEmbedding,
+        TextTimeEmbedding,
+        TimestepEmbedding,
+        Timesteps,
+    )
+except ImportError:
+    # Handle newer diffusers versions
+    from diffusers.models.embeddings import (
+        GaussianFourierProjection,
+        ImageHintTimeEmbedding,
+        ImageProjection,
+        ImageTimeEmbedding,
+        TextImageProjection,
+        TextImageTimeEmbedding,
+        TextTimeEmbedding,
+        TimestepEmbedding,
+        Timesteps,
+    )
+    # PositionNet might not exist in newer versions
+    PositionNet = None
 from diffusers.models.modeling_utils import ModelMixin
 from .unet_2d_blocks import (
     UNetMidBlock2DCrossAttn,

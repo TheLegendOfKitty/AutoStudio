@@ -20,7 +20,15 @@ from torch import nn
 
 from diffusers.utils import is_torch_version, logging
 from diffusers.models.activations import get_activation
-from diffusers.models.attention import AdaGroupNorm
+try:
+    from diffusers.models.attention import AdaGroupNorm
+except ImportError:
+    # Handle newer diffusers versions where AdaGroupNorm might be in a different location
+    try:
+        from diffusers.models.normalization import AdaGroupNorm
+    except ImportError:
+        # If still not found, create a placeholder
+        AdaGroupNorm = None
 from diffusers.models.attention_processor import Attention, AttnAddedKVProcessor, AttnAddedKVProcessor2_0
 from diffusers.models.dual_transformer_2d import DualTransformer2DModel
 from diffusers.models.resnet import Downsample2D, FirDownsample2D, FirUpsample2D, KDownsample2D, KUpsample2D, ResnetBlock2D, Upsample2D
