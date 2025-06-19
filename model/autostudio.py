@@ -983,18 +983,32 @@ class AUTOSTUDIOFLUX:
                         max_sequence_length=max_sequence_length
                     )
                 except Exception:
-                    # Final fallback - just encode text embeddings manually
-                    prompt_embeds = self.pipe._encode_prompt_with_t5(
-                        prompt=prompt,
-                        device=self.device,
-                        num_images_per_prompt=1,
-                        max_sequence_length=max_sequence_length,
+                    # Final fallback - use the tokenizers and encoders directly
+                    import torch
+                    
+                    # T5 encoding for main prompt embeddings
+                    text_inputs = self.pipe.tokenizer_2(
+                        prompt,
+                        padding="max_length",
+                        max_length=max_sequence_length,
+                        truncation=True,
+                        return_tensors="pt",
                     )
-                    pooled_prompt_embeds = self.pipe._encode_prompt_with_clip(
-                        prompt=prompt,
-                        device=self.device,
-                        num_images_per_prompt=1,
+                    prompt_embeds = self.pipe.text_encoder_2(
+                        text_inputs.input_ids.to(self.device)
+                    ).last_hidden_state
+                    
+                    # CLIP encoding for pooled embeddings
+                    text_inputs_clip = self.pipe.tokenizer(
+                        prompt,
+                        padding="max_length",
+                        max_length=self.pipe.tokenizer.model_max_length,
+                        truncation=True,
+                        return_tensors="pt",
                     )
+                    pooled_prompt_embeds = self.pipe.text_encoder(
+                        text_inputs_clip.input_ids.to(self.device)
+                    ).pooler_output
             
             # Integrate character embeddings into prompt embeddings
             if character_embeds and any(embed is not None for embed in character_embeds):
@@ -1782,18 +1796,32 @@ class AUTOSTUDIOFLUX:
                         max_sequence_length=max_sequence_length
                     )
                 except Exception:
-                    # Final fallback - just encode text embeddings manually
-                    prompt_embeds = self.pipe._encode_prompt_with_t5(
-                        prompt=prompt,
-                        device=self.device,
-                        num_images_per_prompt=1,
-                        max_sequence_length=max_sequence_length,
+                    # Final fallback - use the tokenizers and encoders directly
+                    import torch
+                    
+                    # T5 encoding for main prompt embeddings
+                    text_inputs = self.pipe.tokenizer_2(
+                        prompt,
+                        padding="max_length",
+                        max_length=max_sequence_length,
+                        truncation=True,
+                        return_tensors="pt",
                     )
-                    pooled_prompt_embeds = self.pipe._encode_prompt_with_clip(
-                        prompt=prompt,
-                        device=self.device,
-                        num_images_per_prompt=1,
+                    prompt_embeds = self.pipe.text_encoder_2(
+                        text_inputs.input_ids.to(self.device)
+                    ).last_hidden_state
+                    
+                    # CLIP encoding for pooled embeddings
+                    text_inputs_clip = self.pipe.tokenizer(
+                        prompt,
+                        padding="max_length",
+                        max_length=self.pipe.tokenizer.model_max_length,
+                        truncation=True,
+                        return_tensors="pt",
                     )
+                    pooled_prompt_embeds = self.pipe.text_encoder(
+                        text_inputs_clip.input_ids.to(self.device)
+                    ).pooler_output
             
             # Integrate character embeddings into prompt embeddings
             if character_embeds and any(embed is not None for embed in character_embeds):
