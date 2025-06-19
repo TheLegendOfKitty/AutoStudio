@@ -1021,7 +1021,7 @@ class AUTOSTUDIOFLUX:
                         char_embed_resized = char_embed.view(1, -1, char_embed.shape[-1])
                         
                         # Mix with text embeddings using weighted addition
-                        embed_scale = weight * 0.3  # Scale down for subtlety
+                        embed_scale = weight * 0.7  # Stronger visual guidance
                         if char_embed_resized.shape[-1] == prompt_embeds.shape[-1]:
                             # Add character guidance to the first few tokens
                             mix_length = min(char_embed_resized.shape[1], prompt_embeds.shape[1] // 4)
@@ -1109,7 +1109,7 @@ class AUTOSTUDIOFLUX:
                     print(f"🔍 DEBUG: Extracting visual embedding for character {obj_id}, image size: {ref_image.size}")
                     char_embed, _ = self.get_image_embeds(pil_image=ref_image)
                     character_visual_embeds.append(char_embed)
-                    character_weights.append(0.8)  # Strong weight for existing characters
+                    character_weights.append(1.0)  # Maximum weight for existing characters
                     print(f"🎨 Using visual reference for character {obj_id}")
                 except Exception as e:
                     print(f"⚠️ Failed to encode character {obj_id} reference: {e}")
@@ -1853,7 +1853,7 @@ class AUTOSTUDIOFLUX:
                         char_embed_resized = char_embed.view(1, -1, char_embed.shape[-1])
                         
                         # Mix with text embeddings using weighted addition
-                        embed_scale = weight * 0.3  # Scale down for subtlety
+                        embed_scale = weight * 0.7  # Stronger visual guidance
                         if char_embed_resized.shape[-1] == prompt_embeds.shape[-1]:
                             # Add character guidance to the first few tokens
                             mix_length = min(char_embed_resized.shape[1], prompt_embeds.shape[1] // 4)
@@ -1941,7 +1941,7 @@ class AUTOSTUDIOFLUX:
                     print(f"🔍 DEBUG: Extracting visual embedding for character {obj_id}, image size: {ref_image.size}")
                     char_embed, _ = self.get_image_embeds(pil_image=ref_image)
                     character_visual_embeds.append(char_embed)
-                    character_weights.append(0.8)  # Strong weight for existing characters
+                    character_weights.append(1.0)  # Maximum weight for existing characters
                     print(f"🎨 Using visual reference for character {obj_id}")
                 except Exception as e:
                     print(f"⚠️ Failed to encode character {obj_id} reference: {e}")
