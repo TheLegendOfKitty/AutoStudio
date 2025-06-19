@@ -7,6 +7,7 @@ Created by Junhao Cheng
 
 from logging import config
 import os
+import warnings
 #os.environ["CUDA_VISIBLE_DEVICES"]="0"
 current_file_path = os.path.abspath(__file__)
 dpath = os.path.dirname(current_file_path)
@@ -21,6 +22,14 @@ import json
 import time
 import os
 from accelerate import Accelerator
+
+# Suppress common model loading warnings
+warnings.filterwarnings("ignore", message=".*beta.*will be renamed internally to.*bias.*")
+warnings.filterwarnings("ignore", message=".*gamma.*will be renamed internally to.*weight.*")
+warnings.filterwarnings("ignore", message=".*bitsandbytes.*compiled without GPU support.*")
+warnings.filterwarnings("ignore", message=".*Importing from timm.models.layers is deprecated.*")
+warnings.filterwarnings("ignore", message=".*Failed to load custom C++ ops.*")
+warnings.filterwarnings("ignore", message=".*Running on CPU mode Only.*")
 
 # Enable MPS fallback for unsupported operations
 os.environ.setdefault('PYTORCH_ENABLE_MPS_FALLBACK', '1')

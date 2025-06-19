@@ -6,10 +6,15 @@ Provides GGUF quantization for memory-efficient Flux model loading
 
 import torch
 import os
+import warnings
 from pathlib import Path
 from typing import Optional, Dict, Any
 from diffusers import FluxPipeline, FluxTransformer2DModel
 from huggingface_hub import hf_hub_download, list_repo_files
+
+# Suppress common model loading warnings
+warnings.filterwarnings("ignore", message=".*beta.*will be renamed internally to.*bias.*")
+warnings.filterwarnings("ignore", message=".*gamma.*will be renamed internally to.*weight.*")
 
 try:
     from diffusers import GGUFQuantizationConfig

@@ -1,4 +1,5 @@
 import os
+import warnings
 current_file_path = os.path.abspath(__file__)
 dpath = os.path.dirname(current_file_path)
 ppath = os.path.dirname(dpath)
@@ -10,6 +11,10 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+
+# Suppress common model loading warnings
+warnings.filterwarnings("ignore", message=".*beta.*will be renamed internally to.*bias.*")
+warnings.filterwarnings("ignore", message=".*gamma.*will be renamed internally to.*weight.*")
 
 from PIL import Image
 from typing import List
