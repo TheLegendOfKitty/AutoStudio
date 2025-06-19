@@ -1090,15 +1090,23 @@ class AUTOSTUDIOFLUX:
         character_weights = []
         
         # Process characters for visual consistency
+        print(f"🔍 DEBUG: Character database contains: {list(character_database.keys())}")
         for i, obj_id in enumerate(prompt_book['obj_ids']):
             char_desc = prompt_book['gen_boxes'][i][0]  # Character description
             character_descriptions.append(f"({char_desc})")
+            
+            print(f"🔍 DEBUG: Processing character {obj_id}")
+            print(f"🔍 DEBUG: obj_id in database: {obj_id in character_database}")
+            if obj_id in character_database:
+                print(f"🔍 DEBUG: Character {obj_id} database entry type: {type(character_database[obj_id])}")
+                print(f"🔍 DEBUG: Is same as placeholder: {character_database[obj_id] == character_database.get('0')}")
             
             # Check if we have a reference image for this character
             if obj_id in character_database and character_database[obj_id] != character_database.get('0'):
                 try:
                     # Get visual embedding from character reference
                     ref_image = character_database[obj_id]
+                    print(f"🔍 DEBUG: Extracting visual embedding for character {obj_id}, image size: {ref_image.size}")
                     char_embed, _ = self.get_image_embeds(pil_image=ref_image)
                     character_visual_embeds.append(char_embed)
                     character_weights.append(0.8)  # Strong weight for existing characters
@@ -1301,13 +1309,17 @@ class AUTOSTUDIOFLUX:
         # Update character database with generated character crops for future consistency
         if images and len(images) > 0:
             generated_image = images[0]
+            print(f"🔍 DEBUG: Generated image size: {generated_image.size}")
             
             # Extract character crops based on bounding boxes
             for i, obj_id in enumerate(prompt_book['obj_ids']):
                 try:
                     # Get bounding box coordinates
                     bbox = prompt_book['gen_boxes'][i][1]  # [x, y, w, h]
+                    print(f"🔍 DEBUG: Character {obj_id} bbox: {bbox}")
                     x, y, w, h = bbox
+                    
+                    print(f"🔍 DEBUG: Original coordinates - x:{x}, y:{y}, w:{w}, h:{h}")
                     
                     # Ensure coordinates are within image bounds
                     img_width, img_height = generated_image.size
@@ -1316,15 +1328,22 @@ class AUTOSTUDIOFLUX:
                     w = max(1, min(w, img_width - x))
                     h = max(1, min(h, img_height - y))
                     
+                    print(f"🔍 DEBUG: Adjusted coordinates - x:{x}, y:{y}, w:{w}, h:{h}")
+                    print(f"🔍 DEBUG: Crop box: ({x}, {y}, {x + w}, {y + h})")
+                    
                     # Crop character from generated image
                     character_crop = generated_image.crop((x, y, x + w, y + h))
+                    print(f"🔍 DEBUG: Character crop size: {character_crop.size}")
                     
                     # Store in character database for future consistency
                     character_database[obj_id] = character_crop
                     print(f"📸 Stored character {obj_id} crop ({w}x{h}) for future consistency")
+                    print(f"🔍 DEBUG: Database now contains: {list(character_database.keys())}")
                     
                 except Exception as e:
                     print(f"⚠️ Failed to extract character {obj_id}: {e}")
+                    import traceback
+                    traceback.print_exc()
                     continue
 
         return [images, character_database]
@@ -1903,15 +1922,23 @@ class AUTOSTUDIOFLUX:
         character_weights = []
         
         # Process characters for visual consistency
+        print(f"🔍 DEBUG: Character database contains: {list(character_database.keys())}")
         for i, obj_id in enumerate(prompt_book['obj_ids']):
             char_desc = prompt_book['gen_boxes'][i][0]  # Character description
             character_descriptions.append(f"({char_desc})")
+            
+            print(f"🔍 DEBUG: Processing character {obj_id}")
+            print(f"🔍 DEBUG: obj_id in database: {obj_id in character_database}")
+            if obj_id in character_database:
+                print(f"🔍 DEBUG: Character {obj_id} database entry type: {type(character_database[obj_id])}")
+                print(f"🔍 DEBUG: Is same as placeholder: {character_database[obj_id] == character_database.get('0')}")
             
             # Check if we have a reference image for this character
             if obj_id in character_database and character_database[obj_id] != character_database.get('0'):
                 try:
                     # Get visual embedding from character reference
                     ref_image = character_database[obj_id]
+                    print(f"🔍 DEBUG: Extracting visual embedding for character {obj_id}, image size: {ref_image.size}")
                     char_embed, _ = self.get_image_embeds(pil_image=ref_image)
                     character_visual_embeds.append(char_embed)
                     character_weights.append(0.8)  # Strong weight for existing characters
@@ -2114,13 +2141,17 @@ class AUTOSTUDIOFLUX:
         # Update character database with generated character crops for future consistency
         if images and len(images) > 0:
             generated_image = images[0]
+            print(f"🔍 DEBUG: Generated image size: {generated_image.size}")
             
             # Extract character crops based on bounding boxes
             for i, obj_id in enumerate(prompt_book['obj_ids']):
                 try:
                     # Get bounding box coordinates
                     bbox = prompt_book['gen_boxes'][i][1]  # [x, y, w, h]
+                    print(f"🔍 DEBUG: Character {obj_id} bbox: {bbox}")
                     x, y, w, h = bbox
+                    
+                    print(f"🔍 DEBUG: Original coordinates - x:{x}, y:{y}, w:{w}, h:{h}")
                     
                     # Ensure coordinates are within image bounds
                     img_width, img_height = generated_image.size
@@ -2129,15 +2160,22 @@ class AUTOSTUDIOFLUX:
                     w = max(1, min(w, img_width - x))
                     h = max(1, min(h, img_height - y))
                     
+                    print(f"🔍 DEBUG: Adjusted coordinates - x:{x}, y:{y}, w:{w}, h:{h}")
+                    print(f"🔍 DEBUG: Crop box: ({x}, {y}, {x + w}, {y + h})")
+                    
                     # Crop character from generated image
                     character_crop = generated_image.crop((x, y, x + w, y + h))
+                    print(f"🔍 DEBUG: Character crop size: {character_crop.size}")
                     
                     # Store in character database for future consistency
                     character_database[obj_id] = character_crop
                     print(f"📸 Stored character {obj_id} crop ({w}x{h}) for future consistency")
+                    print(f"🔍 DEBUG: Database now contains: {list(character_database.keys())}")
                     
                 except Exception as e:
                     print(f"⚠️ Failed to extract character {obj_id}: {e}")
+                    import traceback
+                    traceback.print_exc()
                     continue
 
         return [images, character_database]
