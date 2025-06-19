@@ -37,8 +37,25 @@ from diffusers.utils import (
     replace_example_docstring,
     PIL_INTERPOLATION
 )
-from diffusers.utils.torch_utils import randn_tensor
-from diffusers.pipeline_utils import DiffusionPipeline
+try:
+    from diffusers.utils.torch_utils import randn_tensor
+except ImportError:
+    # Handle newer diffusers versions where torch_utils might be moved
+    try:
+        from diffusers.utils import randn_tensor
+    except ImportError:
+        # Fallback to PyTorch's randn if diffusers version doesn't have it
+        def randn_tensor(shape, generator=None, device=None, dtype=None, layout=None):
+            return torch.randn(shape, generator=generator, device=device, dtype=dtype, layout=layout)
+try:
+    from diffusers.pipeline_utils import DiffusionPipeline
+except ImportError:
+    # Handle newer diffusers versions where pipeline_utils is moved
+    try:
+        from diffusers.pipelines.pipeline_utils import DiffusionPipeline
+    except ImportError:
+        # Latest versions have it in the main diffusers module
+        from diffusers import DiffusionPipeline
 from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 import torch.optim as optim

@@ -37,6 +37,15 @@ def test_imports():
         return False
     
     try:
+        print("Testing pipeline imports...")
+        from model.pipeline_stable_diffusion import StableDiffusionPipeline
+        print("✅ StableDiffusionPipeline import OK")
+    except Exception as e:
+        print(f"❌ StableDiffusionPipeline import failed: {e}")
+        traceback.print_exc()
+        return False
+    
+    try:
         print("Testing unet_2d_blocks imports...")
         from model.unet_2d_blocks import UNetMidBlock2DCrossAttn
         print("✅ UNet2D blocks import OK")
