@@ -30,7 +30,15 @@ except ImportError:
         # If still not found, create a placeholder
         AdaGroupNorm = None
 from diffusers.models.attention_processor import Attention, AttnAddedKVProcessor, AttnAddedKVProcessor2_0
-from diffusers.models.dual_transformer_2d import DualTransformer2DModel
+try:
+    from diffusers.models.dual_transformer_2d import DualTransformer2DModel
+except ImportError:
+    # Handle newer diffusers versions where DualTransformer2DModel might be moved or removed
+    try:
+        from diffusers.models.transformers.dual_transformer_2d import DualTransformer2DModel
+    except ImportError:
+        # Create a placeholder if not available
+        DualTransformer2DModel = None
 from diffusers.models.resnet import Downsample2D, FirDownsample2D, FirUpsample2D, KDownsample2D, KUpsample2D, ResnetBlock2D, Upsample2D
 from .transformer_2d import Transformer2DModel
 
@@ -633,16 +641,29 @@ class UNetMidBlock2DCrossAttn(nn.Module):
                     )
                 )
             else:
-                attentions.append(
-                    DualTransformer2DModel(
-                        num_attention_heads,
-                        in_channels // num_attention_heads,
-                        in_channels=in_channels,
-                        num_layers=1,
-                        cross_attention_dim=cross_attention_dim,
-                        norm_num_groups=resnet_groups,
+                if DualTransformer2DModel is not None:
+                    attentions.append(
+                        DualTransformer2DModel(
+                            num_attention_heads,
+                            in_channels // num_attention_heads,
+                            in_channels=in_channels,
+                            num_layers=1,
+                            cross_attention_dim=cross_attention_dim,
+                            norm_num_groups=resnet_groups,
+                        )
                     )
-                )
+                else:
+                    # Fallback to regular Transformer2DModel if DualTransformer2DModel is not available
+                    attentions.append(
+                        Transformer2DModel(
+                            num_attention_heads,
+                            in_channels // num_attention_heads,
+                            in_channels=in_channels,
+                            num_layers=1,
+                            cross_attention_dim=cross_attention_dim,
+                            norm_num_groups=resnet_groups,
+                        )
+                    )
             resnets.append(
                 ResnetBlock2D(
                     in_channels=in_channels,
@@ -1031,16 +1052,29 @@ class CrossAttnDownBlock2D(nn.Module):
                     )
                 )
             else:
-                attentions.append(
-                    DualTransformer2DModel(
-                        num_attention_heads,
-                        out_channels // num_attention_heads,
-                        in_channels=out_channels,
-                        num_layers=1,
-                        cross_attention_dim=cross_attention_dim,
-                        norm_num_groups=resnet_groups,
+                if DualTransformer2DModel is not None:
+                    attentions.append(
+                        DualTransformer2DModel(
+                            num_attention_heads,
+                            out_channels // num_attention_heads,
+                            in_channels=out_channels,
+                            num_layers=1,
+                            cross_attention_dim=cross_attention_dim,
+                            norm_num_groups=resnet_groups,
+                        )
                     )
-                )
+                else:
+                    # Fallback to regular Transformer2DModel if DualTransformer2DModel is not available
+                    attentions.append(
+                        Transformer2DModel(
+                            num_attention_heads,
+                            out_channels // num_attention_heads,
+                            in_channels=out_channels,
+                            num_layers=1,
+                            cross_attention_dim=cross_attention_dim,
+                            norm_num_groups=resnet_groups,
+                        )
+                    )
         self.attentions = nn.ModuleList(attentions)
         self.resnets = nn.ModuleList(resnets)
 
@@ -2188,16 +2222,29 @@ class CrossAttnUpBlock2D(nn.Module):
                     )
                 )
             else:
-                attentions.append(
-                    DualTransformer2DModel(
-                        num_attention_heads,
-                        out_channels // num_attention_heads,
-                        in_channels=out_channels,
-                        num_layers=1,
-                        cross_attention_dim=cross_attention_dim,
-                        norm_num_groups=resnet_groups,
+                if DualTransformer2DModel is not None:
+                    attentions.append(
+                        DualTransformer2DModel(
+                            num_attention_heads,
+                            out_channels // num_attention_heads,
+                            in_channels=out_channels,
+                            num_layers=1,
+                            cross_attention_dim=cross_attention_dim,
+                            norm_num_groups=resnet_groups,
+                        )
                     )
-                )
+                else:
+                    # Fallback to regular Transformer2DModel if DualTransformer2DModel is not available
+                    attentions.append(
+                        Transformer2DModel(
+                            num_attention_heads,
+                            out_channels // num_attention_heads,
+                            in_channels=out_channels,
+                            num_layers=1,
+                            cross_attention_dim=cross_attention_dim,
+                            norm_num_groups=resnet_groups,
+                        )
+                    )
         self.attentions = nn.ModuleList(attentions)
         self.resnets = nn.ModuleList(resnets)
 

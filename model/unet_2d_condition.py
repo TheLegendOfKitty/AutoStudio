@@ -601,9 +601,13 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
                 positive_len = cross_attention_dim[0]
 
             feature_type = "text-only" if attention_type == "gated" else "text-image"
-            self.position_net = PositionNet(
-                positive_len=positive_len, out_dim=cross_attention_dim, feature_type=feature_type
-            )
+            if PositionNet is not None:
+                self.position_net = PositionNet(
+                    positive_len=positive_len, out_dim=cross_attention_dim, feature_type=feature_type
+                )
+            else:
+                # PositionNet not available in newer diffusers versions
+                self.position_net = None
 
     @property
     def attn_processors(self) -> Dict[str, AttentionProcessor]:
@@ -961,7 +965,11 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         if cross_attention_kwargs is not None and cross_attention_kwargs.get("gligen", None) is not None:
             cross_attention_kwargs = cross_attention_kwargs.copy()
             gligen_args = cross_attention_kwargs.pop("gligen")
-            cross_attention_kwargs["gligen"] = {"objs": self.position_net(**gligen_args)}
+            if self.position_net is not None:
+                cross_attention_kwargs["gligen"] = {"objs": self.position_net(**gligen_args)}
+            else:
+                # Skip gligen processing if PositionNet is not available
+                pass
 
         attn_maps = {'down':[], 'mid':[], 'up':[]}
 
