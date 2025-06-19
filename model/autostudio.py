@@ -1001,7 +1001,9 @@ class AUTOSTUDIOFLUX:
         if character_descriptions:
             character_prompt = ", ".join(character_descriptions)
             consistency_cues = " ".join(character_refs)
-            main_prompt = f"{prompt_book['background']}, {character_prompt}, {consistency_cues}, {prompt_book['prompt']}"
+            bg_prompt = prompt_book.get('bg_prompt', prompt_book.get('background', ''))
+            scene_prompt = prompt_book.get('prompt', prompt_book.get('caption', ''))
+            main_prompt = f"{bg_prompt}, {character_prompt}, {consistency_cues}, {scene_prompt}"
         else:
             main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
         
@@ -1630,7 +1632,9 @@ class AUTOSTUDIOFLUX:
         if character_descriptions:
             character_prompt = ", ".join(character_descriptions)
             consistency_cues = " ".join(character_refs)
-            main_prompt = f"{prompt_book['background']}, {character_prompt}, {consistency_cues}, {prompt_book['prompt']}"
+            bg_prompt = prompt_book.get('bg_prompt', prompt_book.get('background', ''))
+            scene_prompt = prompt_book.get('prompt', prompt_book.get('caption', ''))
+            main_prompt = f"{bg_prompt}, {character_prompt}, {consistency_cues}, {scene_prompt}"
         else:
             main_prompt = prompt_book['global_prompt'] if prompt_book['global_prompt'] else "best quality, high quality"
         
